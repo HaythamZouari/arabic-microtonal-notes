@@ -1,0 +1,49 @@
+sans titre-10.wav : 127.28 Hz (✓)
+sans titre-11.wav : 130.89 Hz (✓)
+sans titre-12.wav : 134.43 Hz (✓)
+sans titre-13.wav : 138.56 Hz (✓)
+sans titre-14.wav : 142.62 Hz (✓)
+sans titre-15.wav : 146.95 Hz (✓)
+sans titre-16.wav : 149.87 Hz (✓)
+sans titre-17.wav : 154.45 Hz (✓)
+sans titre-18.wav : 158.31 Hz (✓)
+sans titre-19.wav : 156.69 Hz (✓)
+sans titre-2.wav : 101.38 Hz (✓)
+sans titre-20.wav : 169.10 Hz (✓)
+sans titre-21.wav : 174.31 Hz (✓)
+sans titre-22.wav : 178.78 Hz (✓)
+sans titre-23.wav : 183.75 Hz (✓)
+sans titre-24.wav : 189.12 Hz (✓)
+sans titre-25.wav : 196.21 Hz (✓)
+sans titre-26.wav : INCERTAIN — librosa=137.04, parselmouth=202.24
+sans titre-27.wav : INCERTAIN — librosa=136.12, parselmouth=208.13
+sans titre-28.wav : INCERTAIN — librosa=145.58, parselmouth=214.22
+sans titre-29.wav : 218.35 Hz (✓)
+sans titre-3.wav : 104.09 Hz (✓)
+sans titre-30.wav : INCERTAIN — librosa=151.07, parselmouth=226.90
+sans titre-31.wav : 124.62 Hz (✓)
+sans titre-32.wav : INCERTAIN — librosa=128.21, parselmouth=240.14
+sans titre-33.wav : INCERTAIN — librosa=144.03, parselmouth=246.85
+sans titre-34.wav : INCERTAIN — librosa=136.34, parselmouth=254.15
+sans titre-35.wav : 137.94 Hz (✓)
+sans titre-36.wav : 270.14 Hz (✓)
+sans titre-37.wav : 142.42 Hz (✓)
+sans titre-38.wav : INCERTAIN — librosa=142.94, parselmouth=284.77
+sans titre-39.wav : 293.43 Hz (✓)
+sans titre-4.wav : 107.15 Hz (✓)
+sans titre-40.wav : INCERTAIN — librosa=152.09, parselmouth=302.38
+sans titre-41.wav : INCERTAIN — librosa=155.47, parselmouth=310.99
+sans titre-42.wav : INCERTAIN — librosa=154.28, parselmouth=319.76
+sans titre-43.wav : 297.98 Hz (✓)
+sans titre-44.wav : INCERTAIN — librosa=154.56, parselmouth=339.55
+sans titre-45.wav : INCERTAIN — librosa=145.01, parselmouth=350.29
+sans titre-46.wav : INCERTAIN — librosa=143.67, parselmouth=360.09
+sans titre-47.wav : INCERTAIN — librosa=184.76, parselmouth=369.35
+sans titre-48.wav : INCERTAIN — librosa=148.38, parselmouth=381.49
+sans titre-49.wav : 391.24 Hz (✓)
+sans titre-5.wav : 110.16 Hz (✓)
+sans titre-6.wav : 113.41 Hz (✓)
+sans titre-7.wav : 116.32 Hz (✓)
+sans titre-8.wav : 120.02 Hz (✓)
+sans titre-9.wav : 123.64 Hz (✓)
+sans titre.wav : 98.08 Hz (✓)
