@@ -106,31 +106,76 @@
   }
 
   const app = document.getElementById("app");
-  let current = null; // bouton en cours de lecture
-  const audio = new Audio();
+  const status = document.getElementById("status");
+  let current = null;       // bouton en cours de lecture
+  let currentSource = null; // BufferSourceNode en cours
 
-  // Amplification du volume au-delà de 100 % via Web Audio API
-  let gainNode = null;
-  function setupGain() {
-    if (gainNode) return;
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const src = ctx.createMediaElementSource(audio);
+  // Rognage (non destructif) : on ignore le début et la fin de chaque enregistrement
+  const TRIM_START = 2; // secondes coupées au début
+  const TRIM_END = 1;   // secondes coupées à la fin
 
-      // Compresseur : remonte le niveau et évite la saturation quand on amplifie fort
-      const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -30; // dB : à partir d'où on compresse
-      comp.knee.value = 30;
-      comp.ratio.value = 12;      // compression forte
-      comp.attack.value = 0.003;
-      comp.release.value = 0.25;
+  // ---- Moteur audio : Web Audio API avec préchargement en mémoire ----
+  let ctx = null, gainNode = null, comp = null;
+  const buffers = new Array(TOTAL);   // AudioBuffer décodés
+  const loading = new Array(TOTAL);   // promesses de chargement
 
-      gainNode = ctx.createGain();
-      gainNode.gain.value = parseFloat(document.getElementById("vol").value) / 100;
+  function initCtx() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -30; comp.knee.value = 30; comp.ratio.value = 12;
+    comp.attack.value = 0.003; comp.release.value = 0.25;
+    gainNode = ctx.createGain();
+    gainNode.gain.value = parseFloat(vol.value) / 100;
+    comp.connect(gainNode).connect(ctx.destination); // source -> comp -> gain -> sortie
+  }
 
-      src.connect(comp).connect(gainNode).connect(ctx.destination);
-      audio._ctx = ctx;
-    } catch (e) { /* navigateur sans Web Audio : volume normal */ }
+  function loadBuffer(i) {
+    if (buffers[i]) return Promise.resolve(buffers[i]);
+    if (loading[i]) return loading[i];
+    loading[i] = fetch(fileFor(i))
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
+      .then(ab => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
+      .then(buf => { buffers[i] = buf; return buf; })
+      .catch(err => { loading[i] = null; throw err; });
+    return loading[i];
+  }
+
+  function startBuffer(i, btn, buf) {
+    stop();
+    const srcNode = ctx.createBufferSource();
+    srcNode.buffer = buf;
+    srcNode.connect(comp);
+    const dur = Math.max(0, buf.duration - TRIM_START - TRIM_END);
+    const offset = buf.duration > TRIM_START + TRIM_END ? TRIM_START : 0;
+    srcNode.start(0, offset, dur || undefined);
+    currentSource = srcNode;
+    current = btn;
+    btn.classList.add("playing");
+    status.textContent = "▶ Note n°" + (i + 1);
+    status.style.color = "";
+    srcNode.onended = () => {
+      if (currentSource === srcNode) { btn.classList.remove("playing"); current = null; currentSource = null; }
+    };
+  }
+
+  function stop() {
+    if (currentSource) { try { currentSource.onended = null; currentSource.stop(); } catch (e) {} currentSource = null; }
+    if (current) { current.classList.remove("playing"); current = null; }
+  }
+
+  function play(i, btn) {
+    initCtx();
+    if (ctx.state === "suspended") ctx.resume();
+    if (current === btn) { stop(); status.textContent = ""; return; } // reclic = arrêt
+    if (buffers[i]) { startBuffer(i, btn, buffers[i]); return; }
+    status.textContent = "⏳ Chargement…";
+    loadBuffer(i)
+      .then(buf => startBuffer(i, btn, buf))
+      .catch(err => {
+        status.textContent = "⚠ Impossible de lire la note n°" + (i + 1) + " — " + err.message;
+        status.style.color = "#ff8a8a";
+      });
   }
 
   function makeOctave(title, start, end) {
@@ -154,18 +199,7 @@
     return sec;
   }
 
-  const status = document.getElementById("status");
-
-  // Rognage à la lecture (non destructif) : on ignore le début et la fin de chaque enregistrement
-  const TRIM_START = 2; // secondes coupées au début
-  const TRIM_END = 1;   // secondes coupées à la fin
-
-  function stop() {
-    audio.pause();
-    if (current) { current.classList.remove("playing"); current = null; }
-    status.textContent = "";
-  }
-  document.getElementById("stop").addEventListener("click", stop);
+  document.getElementById("stop").addEventListener("click", () => { stop(); status.textContent = ""; });
 
   const vol = document.getElementById("vol");
   const volval = document.getElementById("volval");
@@ -174,52 +208,25 @@
     if (gainNode) gainNode.gain.value = parseFloat(vol.value) / 100;
   });
 
-  function play(i, btn) {
-    if (current === btn) { stop(); return; } // reclic = arrêt
-    setupGain();
-    if (audio._ctx && audio._ctx.state === "suspended") audio._ctx.resume();
-    if (current) current.classList.remove("playing");
-    const url = fileFor(i);
-    audio.src = url;
-    status.textContent = "▶ Lecture : " + decodeURIComponent(url);
-    status.style.color = "";
-    audio.play()
-      .then(() => { btn.classList.add("playing"); current = btn; })
-      .catch(err => {
-        if (err.name === "AbortError") return; // lecture remplacée par un nouveau clic : normal
-        status.textContent = "⚠ Impossible de lire " + decodeURIComponent(url) + " — " + err.message;
-        status.style.color = "#ff8a8a";
-      });
-  }
-
-  // Démarre la lecture après le rognage initial
-  audio.addEventListener("loadedmetadata", () => {
-    if (isFinite(audio.duration) && audio.duration > TRIM_START + TRIM_END) {
-      try { audio.currentTime = TRIM_START; } catch (e) {}
-    }
-  });
-
-  // Coupe la fin
-  audio.addEventListener("timeupdate", () => {
-    if (isFinite(audio.duration) && audio.currentTime >= audio.duration - TRIM_END) {
-      stop();
-    }
-  });
-
-  audio.addEventListener("error", () => {
-    const u = decodeURIComponent(audio.src.split("/").slice(-2).join("/"));
-    status.textContent = "⚠ Fichier introuvable ou illisible : " + u;
-    status.style.color = "#ff8a8a";
-    if (current) { current.classList.remove("playing"); current = null; }
-  });
-
-  audio.addEventListener("ended", () => {
-    if (current) { current.classList.remove("playing"); current = null; }
-  });
-
   app.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
   app.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
   app.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
+
+  // Préchargement en arrière-plan (séquentiel) pour des clics instantanés
+  function prefetchAll() {
+    initCtx();
+    let k = 0;
+    (function next() {
+      if (k >= TOTAL) return;
+      const i = k++;
+      loadBuffer(i).catch(() => {}).then(next);
+    })();
+  }
+  // Lancé au premier geste utilisateur (les navigateurs exigent un geste pour l'audio)
+  window.addEventListener("pointerdown", function once() {
+    window.removeEventListener("pointerdown", once);
+    prefetchAll();
+  }, { once: true });
 </script>
 </body>
 </html>
