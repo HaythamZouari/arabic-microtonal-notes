@@ -128,6 +128,10 @@
 
   const status = document.getElementById("status");
 
+  // Rognage à la lecture (non destructif) : on ignore le début et la fin de chaque enregistrement
+  const TRIM_START = 2; // secondes coupées au début
+  const TRIM_END = 1;   // secondes coupées à la fin
+
   function stop() {
     audio.pause();
     if (current) { current.classList.remove("playing"); current = null; }
@@ -150,6 +154,20 @@
         status.style.color = "#ff8a8a";
       });
   }
+
+  // Démarre la lecture après le rognage initial
+  audio.addEventListener("loadedmetadata", () => {
+    if (isFinite(audio.duration) && audio.duration > TRIM_START + TRIM_END) {
+      try { audio.currentTime = TRIM_START; } catch (e) {}
+    }
+  });
+
+  // Coupe la fin
+  audio.addEventListener("timeupdate", () => {
+    if (isFinite(audio.duration) && audio.currentTime >= audio.duration - TRIM_END) {
+      stop();
+    }
+  });
 
   audio.addEventListener("error", () => {
     const u = decodeURIComponent(audio.src.split("/").slice(-2).join("/"));
