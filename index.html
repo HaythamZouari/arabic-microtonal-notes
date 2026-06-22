@@ -65,14 +65,50 @@
   }
   button.note.playing { outline: 3px solid #fff; }
   footer { text-align: center; opacity: .6; font-size: .85rem; margin-top: 30px; }
+
+  /* Onglets de mode */
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+  .tab {
+    cursor: pointer; border: none; border-radius: 999px; padding: 10px 22px;
+    font-weight: 600; font-size: .95rem; color: var(--text);
+    background: #3a2a5e; opacity: .7; transition: opacity .2s, background .2s;
+  }
+  .tab.active { opacity: 1; background: var(--accent); color: #1b1033; }
+
+  /* Dictée */
+  .panel { max-width: 760px; margin: 0 auto; background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+  .panel h2 { margin: 0 0 14px; font-size: 1.1rem; color: var(--accent); }
+  .panel h3 { margin: 18px 0 8px; font-size: .9rem; opacity: .8; font-weight: 600; }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+  .checks label { display: flex; align-items: center; gap: 6px; font-size: .9rem;
+    background: rgba(255,255,255,.06); padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .btn {
+    cursor: pointer; border: none; border-radius: 12px; padding: 12px 22px;
+    font-weight: 700; font-size: 1rem; color: #1b1033;
+    background: linear-gradient(145deg, #fff6df, #ffcc4d); box-shadow: 0 3px 0 #c79a2e;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 0 0 #c79a2e; }
+  .btn.ghost { background: #3a2a5e; color: var(--text); box-shadow: 0 3px 0 #241844; }
+  .feedback { text-align: center; font-size: 1.3rem; font-weight: 700; min-height: 1.6em; margin: 16px 0; }
+  .feedback.ok { color: #67e08a; }
+  .feedback.ko { color: #ff8a8a; }
+  button.note.correct { outline: 3px solid #67e08a; }
+  button.note.wrong { outline: 3px solid #ff8a8a; opacity: .7; }
+  .score { text-align: center; opacity: .85; font-size: .95rem; margin-bottom: 14px; }
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
 <header>
   <h1>🎵 Notes microtonales arabes</h1>
   <p>De <strong>Sol</strong> à <strong>Sol</strong> sur 2 octaves — par quarts de ton (49 notes)</p>
-  <p>Cliquez sur une note pour écouter l'enregistrement.</p>
 </header>
+
+<div class="tabs">
+  <button class="tab active" id="tab-libre">🎹 Écoute libre</button>
+  <button class="tab" id="tab-dictee">🎧 Dictée</button>
+</div>
 
 <div style="text-align:center;margin-bottom:10px;display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;">
   <button id="stop" style="cursor:pointer;border:none;border-radius:10px;padding:8px 18px;font-weight:600;background:#3a2a5e;color:#f4f0ff;box-shadow:0 2px 6px rgba(0,0,0,.3);">⏹ Stop</button>
@@ -84,6 +120,42 @@
 <p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
 
 <main id="app"></main>
+
+<section id="dictee" class="hidden">
+  <!-- Configuration -->
+  <div class="panel" id="dictee-config">
+    <h2>🎧 Dictée musicale — configuration</h2>
+    <h3>Octave(s)</h3>
+    <div class="checks" id="oct-checks">
+      <label><input type="checkbox" class="oct" value="0" checked> 1ʳᵉ octave</label>
+      <label><input type="checkbox" class="oct" value="24"> 2ᵉ octave</label>
+    </div>
+    <h3>Notes à deviner
+      <button class="btn ghost" id="all-notes" style="padding:4px 10px;font-size:.8rem;margin-left:8px;">Tout</button>
+      <button class="btn ghost" id="none-notes" style="padding:4px 10px;font-size:.8rem;">Aucune</button>
+    </h3>
+    <div class="checks" id="note-checks"></div>
+    <p id="cfg-msg" style="color:#ff8a8a;min-height:1.2em;margin:12px 0 0;font-size:.9rem;"></p>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn" id="start-dictee">▶ Commencer la dictée</button>
+    </div>
+  </div>
+
+  <!-- Jeu -->
+  <div class="panel hidden" id="dictee-game">
+    <div class="score" id="score">Score : 0 / 0</div>
+    <div style="text-align:center;margin-bottom:18px;">
+      <button class="btn" id="replay">🔊 Réécouter la note</button>
+    </div>
+    <p style="text-align:center;opacity:.8;margin:0 0 14px;">Quelle note as-tu entendue ?</p>
+    <div class="grid" id="guesses"></div>
+    <div class="feedback" id="feedback"></div>
+    <div style="text-align:center;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn hidden" id="next-q">Note suivante ▶</button>
+      <button class="btn ghost" id="back-config">⚙ Changer les réglages</button>
+    </div>
+  </div>
+</section>
 
 <footer>Enregistrements&nbsp;: dossier <code>solsolsol/</code></footer>
 
@@ -174,6 +246,23 @@
       });
   }
 
+  // Joue une note par son index, sans surbrillance ni révélation (pour la dictée)
+  function playIndex(i) {
+    initCtx();
+    if (ctx.state === "suspended") ctx.resume();
+    const go = buf => {
+      stop();
+      const s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.connect(gainNode);
+      s.start(0);
+      currentSource = s;
+      s.onended = () => { if (currentSource === s) currentSource = null; };
+    };
+    if (buffers[i]) go(buffers[i]);
+    else loadBuffer(i).then(go).catch(() => {});
+  }
+
   function makeOctave(title, start, end) {
     const sec = document.createElement("section");
     sec.className = "octave";
@@ -207,6 +296,117 @@
   app.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
   app.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
   app.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
+
+  // ================= MODE DICTÉE =================
+  const noteName = i => NAMES[i % 24] + (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
+
+  // Onglets
+  const tabLibre = document.getElementById("tab-libre");
+  const tabDictee = document.getElementById("tab-dictee");
+  const secLibre = document.getElementById("app");
+  const secDictee = document.getElementById("dictee");
+  function switchMode(dictee) {
+    stop();
+    tabDictee.classList.toggle("active", dictee);
+    tabLibre.classList.toggle("active", !dictee);
+    secDictee.classList.toggle("hidden", !dictee);
+    secLibre.classList.toggle("hidden", dictee);
+    status.textContent = "";
+  }
+  tabLibre.addEventListener("click", () => switchMode(false));
+  tabDictee.addEventListener("click", () => switchMode(true));
+
+  // Cases à cocher des notes (les 24 hauteurs)
+  const noteChecks = document.getElementById("note-checks");
+  NAMES.forEach((n, p) => {
+    const l = document.createElement("label");
+    l.innerHTML = '<input type="checkbox" class="note-chk" value="' + p + '" checked> ' + n;
+    noteChecks.appendChild(l);
+  });
+  document.getElementById("all-notes").addEventListener("click",
+    () => document.querySelectorAll(".note-chk").forEach(c => c.checked = true));
+  document.getElementById("none-notes").addEventListener("click",
+    () => document.querySelectorAll(".note-chk").forEach(c => c.checked = false));
+
+  // État du jeu
+  let pool = [];      // indices possibles
+  let answer = -1;    // index de la note à deviner
+  let good = 0, tot = 0;
+
+  const cfg = document.getElementById("dictee-config");
+  const game = document.getElementById("dictee-game");
+  const cfgMsg = document.getElementById("cfg-msg");
+  const guesses = document.getElementById("guesses");
+  const feedback = document.getElementById("feedback");
+  const scoreEl = document.getElementById("score");
+  const nextBtn = document.getElementById("next-q");
+
+  function buildPool() {
+    const octs = [...document.querySelectorAll(".oct:checked")].map(c => +c.value);
+    const pcs = [...document.querySelectorAll(".note-chk:checked")].map(c => +c.value);
+    const p = [];
+    octs.forEach(base => pcs.forEach(pc => p.push(base + pc)));
+    return p.sort((a, b) => a - b);
+  }
+
+  function renderGuesses() {
+    guesses.innerHTML = "";
+    pool.forEach(i => {
+      const btn = document.createElement("button");
+      btn.className = "note";
+      btn.innerHTML = noteName(i);
+      btn.addEventListener("click", () => guess(i, btn));
+      guesses.appendChild(btn);
+    });
+  }
+
+  function newQuestion() {
+    feedback.textContent = "";
+    feedback.className = "feedback";
+    nextBtn.classList.add("hidden");
+    [...guesses.children].forEach(b => { b.classList.remove("correct", "wrong"); b.disabled = false; });
+    answer = pool[Math.floor(Math.random() * pool.length)];
+    playIndex(answer);
+  }
+
+  function guess(i, btn) {
+    if (nextBtn.classList.contains("hidden") === false) return; // déjà répondu
+    tot++;
+    if (i === answer) {
+      good++;
+      btn.classList.add("correct");
+      feedback.textContent = "✓ Correct ! C'était " + noteName(answer);
+      feedback.className = "feedback ok";
+    } else {
+      btn.classList.add("wrong");
+      feedback.textContent = "✗ Raté. C'était " + noteName(answer);
+      feedback.className = "feedback ko";
+      [...guesses.children].forEach(b => { if (b.textContent === noteName(answer)) b.classList.add("correct"); });
+    }
+    [...guesses.children].forEach(b => b.disabled = true);
+    scoreEl.textContent = "Score : " + good + " / " + tot;
+    nextBtn.classList.remove("hidden");
+  }
+
+  document.getElementById("start-dictee").addEventListener("click", () => {
+    pool = buildPool();
+    if (pool.length < 2) { cfgMsg.textContent = "Sélectionne au moins 2 notes (octave + notes)."; return; }
+    cfgMsg.textContent = "";
+    good = 0; tot = 0;
+    scoreEl.textContent = "Score : 0 / 0";
+    cfg.classList.add("hidden");
+    game.classList.remove("hidden");
+    renderGuesses();
+    newQuestion();
+  });
+
+  document.getElementById("replay").addEventListener("click", () => { if (answer >= 0) playIndex(answer); });
+  nextBtn.addEventListener("click", newQuestion);
+  document.getElementById("back-config").addEventListener("click", () => {
+    stop();
+    game.classList.add("hidden");
+    cfg.classList.remove("hidden");
+  });
 
   // Préchargement en arrière-plan dès l'ouverture (fichiers légers) — clics instantanés.
   // Le décodage ne nécessite pas de geste utilisateur ; seule la lecture en exige un.
