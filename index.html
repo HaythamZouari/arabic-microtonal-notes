@@ -74,6 +74,8 @@
   <p>Cliquez sur une note pour écouter l'enregistrement.</p>
 </header>
 
+<p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
+
 <main id="app"></main>
 
 <footer>Enregistrements&nbsp;: dossier <code>solsolsol/</code></footer>
@@ -121,14 +123,28 @@
     return sec;
   }
 
+  const status = document.getElementById("status");
+
   function play(i, btn) {
     if (current) current.classList.remove("playing");
-    audio.src = fileFor(i);
-    audio.currentTime = 0;
-    audio.play().catch(err => console.warn("Lecture impossible :", err));
-    btn.classList.add("playing");
-    current = btn;
+    const url = fileFor(i);
+    audio.src = url;
+    status.textContent = "▶ Lecture : " + decodeURIComponent(url);
+    status.style.color = "";
+    audio.play()
+      .then(() => { btn.classList.add("playing"); current = btn; })
+      .catch(err => {
+        status.textContent = "⚠ Impossible de lire " + decodeURIComponent(url) + " — " + err.message;
+        status.style.color = "#ff8a8a";
+      });
   }
+
+  audio.addEventListener("error", () => {
+    const u = decodeURIComponent(audio.src.split("/").slice(-2).join("/"));
+    status.textContent = "⚠ Fichier introuvable ou illisible : " + u;
+    status.style.color = "#ff8a8a";
+    if (current) { current.classList.remove("playing"); current = null; }
+  });
 
   audio.addEventListener("ended", () => {
     if (current) { current.classList.remove("playing"); current = null; }
