@@ -74,6 +74,9 @@
   <p>Cliquez sur une note pour écouter l'enregistrement.</p>
 </header>
 
+<div style="text-align:center;margin-bottom:10px;">
+  <button id="stop" style="cursor:pointer;border:none;border-radius:10px;padding:8px 18px;font-weight:600;background:#3a2a5e;color:#f4f0ff;box-shadow:0 2px 6px rgba(0,0,0,.3);">⏹ Stop</button>
+</div>
 <p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
 
 <main id="app"></main>
@@ -81,12 +84,12 @@
 <footer>Enregistrements&nbsp;: dossier <code>solsolsol/</code></footer>
 
 <script>
-  // Noms des 24 hauteurs (quarts de ton) en descendant à partir de Sol
+  // Noms des 24 hauteurs (quarts de ton) en MONTANT à partir de Sol
   const NAMES = [
-    "Sol", "Sol ½♭", "Sol ♭", "Fa ½♯", "Fa", "Fa ½♭",
-    "Mi", "Mi ½♭", "Mi ♭", "Ré ½♯", "Ré", "Ré ½♭",
-    "Ré ♭", "Do ½♯", "Do", "Do ½♭", "Si", "Si ½♭",
-    "Si ♭", "La ½♯", "La", "La ½♭", "La ♭", "Sol ½♯"
+    "Sol", "Sol ½♯", "La ♭", "La ½♭", "La", "La ½♯",
+    "Si ♭", "Si ½♭", "Si", "Si ½♯", "Do", "Do ½♯",
+    "Do ♯", "Ré ½♭", "Ré", "Ré ½♯", "Mi ♭", "Mi ½♭",
+    "Mi", "Mi ½♯", "Fa", "Fa ½♯", "Fa ♯", "Sol ½♭"
   ];
 
   const TOTAL = 49; // 0..48 (sol -> sol -> sol)
@@ -125,7 +128,15 @@
 
   const status = document.getElementById("status");
 
+  function stop() {
+    audio.pause();
+    if (current) { current.classList.remove("playing"); current = null; }
+    status.textContent = "";
+  }
+  document.getElementById("stop").addEventListener("click", stop);
+
   function play(i, btn) {
+    if (current === btn) { stop(); return; } // reclic = arrêt
     if (current) current.classList.remove("playing");
     const url = fileFor(i);
     audio.src = url;
@@ -152,7 +163,7 @@
 
   app.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
   app.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
-  app.appendChild(makeOctave("Sol grave final (note 49)", 48, 48));
+  app.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
 </script>
 </body>
 </html>
