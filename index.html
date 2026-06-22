@@ -97,12 +97,11 @@
   ];
 
   const TOTAL = 49; // 0..48 (sol -> sol -> sol)
-  const FOLDER = "solsolsol";
+  const FOLDER = "notes"; // versions allégées (rognées, mono, 22 kHz)
 
   // Nom du fichier correspondant à l'index de la note
   function fileFor(i) {
-    const base = (i === 0) ? "sans titre.wav" : "sans titre-" + (i + 1) + ".wav";
-    return FOLDER + "/" + encodeURIComponent(base);
+    return FOLDER + "/note-" + i + ".wav";
   }
 
   const app = document.getElementById("app");
@@ -110,9 +109,9 @@
   let current = null;       // bouton en cours de lecture
   let currentSource = null; // BufferSourceNode en cours
 
-  // Rognage (non destructif) : on ignore le début et la fin de chaque enregistrement
-  const TRIM_START = 2; // secondes coupées au début
-  const TRIM_END = 1;   // secondes coupées à la fin
+  // Le rognage est déjà appliqué dans les fichiers de notes/ (voir build_notes.py)
+  const TRIM_START = 0;
+  const TRIM_END = 0;
 
   // ---- Moteur audio : Web Audio API avec préchargement en mémoire ----
   let ctx = null, gainNode = null, comp = null;
@@ -212,21 +211,25 @@
   app.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
   app.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
 
-  // Préchargement en arrière-plan (séquentiel) pour des clics instantanés
+  // Préchargement en arrière-plan dès l'ouverture (fichiers légers) — clics instantanés.
+  // Le décodage ne nécessite pas de geste utilisateur ; seule la lecture en exige un.
   function prefetchAll() {
     initCtx();
+    let done = 0;
+    const CONCURRENCY = 6;
     let k = 0;
-    (function next() {
+    function next() {
       if (k >= TOTAL) return;
       const i = k++;
-      loadBuffer(i).catch(() => {}).then(next);
-    })();
+      loadBuffer(i).catch(() => {}).then(() => {
+        done++;
+        status.textContent = done >= TOTAL ? "" : "⏳ Préchargement " + done + "/" + TOTAL;
+        next();
+      });
+    }
+    for (let c = 0; c < CONCURRENCY; c++) next();
   }
-  // Lancé au premier geste utilisateur (les navigateurs exigent un geste pour l'audio)
-  window.addEventListener("pointerdown", function once() {
-    window.removeEventListener("pointerdown", once);
-    prefetchAll();
-  }, { once: true });
+  prefetchAll();
 </script>
 </body>
 </html>
