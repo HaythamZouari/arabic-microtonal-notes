@@ -13,8 +13,8 @@ import os, wave, audioop
 
 SRC = "solsolsol"
 DST = "notes"
-TRIM_START = 2.0  # secondes coupées au début
-TRIM_END = 1.0    # secondes coupées à la fin
+TRIM_START = 0.0  # secondes coupées au début
+TRIM_END = 0.0    # secondes coupées à la fin
 TARGET_RATE = 22050
 TOTAL = 49
 
