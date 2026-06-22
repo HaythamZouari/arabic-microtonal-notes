@@ -77,8 +77,8 @@
 <div style="text-align:center;margin-bottom:10px;display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;">
   <button id="stop" style="cursor:pointer;border:none;border-radius:10px;padding:8px 18px;font-weight:600;background:#3a2a5e;color:#f4f0ff;box-shadow:0 2px 6px rgba(0,0,0,.3);">⏹ Stop</button>
   <label style="font-size:.9rem;opacity:.85;">🔊 Gain
-    <input id="vol" type="range" min="100" max="500" step="10" value="250" style="vertical-align:middle;width:160px;">
-    <span id="volval">250 %</span>
+    <input id="vol" type="range" min="100" max="800" step="10" value="350" style="vertical-align:middle;width:160px;">
+    <span id="volval">350 %</span>
   </label>
 </div>
 <p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
@@ -116,9 +116,19 @@
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const src = ctx.createMediaElementSource(audio);
+
+      // Compresseur : remonte le niveau et évite la saturation quand on amplifie fort
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -30; // dB : à partir d'où on compresse
+      comp.knee.value = 30;
+      comp.ratio.value = 12;      // compression forte
+      comp.attack.value = 0.003;
+      comp.release.value = 0.25;
+
       gainNode = ctx.createGain();
       gainNode.gain.value = parseFloat(document.getElementById("vol").value) / 100;
-      src.connect(gainNode).connect(ctx.destination);
+
+      src.connect(comp).connect(gainNode).connect(ctx.destination);
       audio._ctx = ctx;
     } catch (e) { /* navigateur sans Web Audio : volume normal */ }
   }
