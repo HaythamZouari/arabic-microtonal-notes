@@ -145,6 +145,7 @@
     audio.play()
       .then(() => { btn.classList.add("playing"); current = btn; })
       .catch(err => {
+        if (err.name === "AbortError") return; // lecture remplacée par un nouveau clic : normal
         status.textContent = "⚠ Impossible de lire " + decodeURIComponent(url) + " — " + err.message;
         status.style.color = "#ff8a8a";
       });
