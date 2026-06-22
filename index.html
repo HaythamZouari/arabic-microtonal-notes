@@ -74,8 +74,12 @@
   <p>Cliquez sur une note pour écouter l'enregistrement.</p>
 </header>
 
-<div style="text-align:center;margin-bottom:10px;">
+<div style="text-align:center;margin-bottom:10px;display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;">
   <button id="stop" style="cursor:pointer;border:none;border-radius:10px;padding:8px 18px;font-weight:600;background:#3a2a5e;color:#f4f0ff;box-shadow:0 2px 6px rgba(0,0,0,.3);">⏹ Stop</button>
+  <label style="font-size:.9rem;opacity:.85;">🔊 Volume
+    <input id="vol" type="range" min="1" max="5" step="0.5" value="2.5" style="vertical-align:middle;">
+    <span id="volval">2.5×</span>
+  </label>
 </div>
 <p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
 
@@ -104,6 +108,20 @@
   const app = document.getElementById("app");
   let current = null; // bouton en cours de lecture
   const audio = new Audio();
+
+  // Amplification du volume au-delà de 100 % via Web Audio API
+  let gainNode = null;
+  function setupGain() {
+    if (gainNode) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaElementSource(audio);
+      gainNode = ctx.createGain();
+      gainNode.gain.value = parseFloat(document.getElementById("vol").value);
+      src.connect(gainNode).connect(ctx.destination);
+      audio._ctx = ctx;
+    } catch (e) { /* navigateur sans Web Audio : volume normal */ }
+  }
 
   function makeOctave(title, start, end) {
     const sec = document.createElement("section");
@@ -139,8 +157,17 @@
   }
   document.getElementById("stop").addEventListener("click", stop);
 
+  const vol = document.getElementById("vol");
+  const volval = document.getElementById("volval");
+  vol.addEventListener("input", () => {
+    volval.textContent = parseFloat(vol.value).toFixed(1) + "×";
+    if (gainNode) gainNode.gain.value = parseFloat(vol.value);
+  });
+
   function play(i, btn) {
     if (current === btn) { stop(); return; } // reclic = arrêt
+    setupGain();
+    if (audio._ctx && audio._ctx.state === "suspended") audio._ctx.resume();
     if (current) current.classList.remove("playing");
     const url = fileFor(i);
     audio.src = url;
