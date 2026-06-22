@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notes microtonales arabes — Sol à Sol (quarts de ton)</title>
+<style>
+  :root {
+    --bg: #1b1033;
+    --bg2: #2a1b4d;
+    --accent: #ffcc4d;
+    --text: #f4f0ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(160deg, var(--bg), var(--bg2));
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+  header { text-align: center; margin-bottom: 28px; }
+  h1 { font-size: clamp(1.4rem, 4vw, 2.2rem); margin: 0 0 8px; }
+  header p { opacity: .8; margin: 4px 0; font-size: .95rem; }
+  .octave { max-width: 980px; margin: 0 auto 32px; }
+  .octave h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,.15);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+  }
+  button.note {
+    cursor: pointer;
+    border: none;
+    border-radius: 14px;
+    padding: 16px 8px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #1b1033;
+    background: linear-gradient(145deg, #fff6df, #ffcc4d);
+    box-shadow: 0 4px 0 #c79a2e, 0 6px 14px rgba(0,0,0,.35);
+    transition: transform .08s ease, box-shadow .08s ease, background .2s;
+    position: relative;
+  }
+  button.note .idx {
+    display: block;
+    font-size: .7rem;
+    font-weight: 500;
+    opacity: .6;
+    margin-top: 4px;
+  }
+  button.note:hover { background: linear-gradient(145deg, #fffdf6, #ffd766); }
+  button.note:active, button.note.playing {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #c79a2e, 0 2px 8px rgba(0,0,0,.4);
+    background: linear-gradient(145deg, #ffe9a8, #ffb300);
+  }
+  button.note.playing { outline: 3px solid #fff; }
+  footer { text-align: center; opacity: .6; font-size: .85rem; margin-top: 30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎵 Notes microtonales arabes</h1>
+  <p>De <strong>Sol</strong> à <strong>Sol</strong> sur 2 octaves — par quarts de ton (49 notes)</p>
+  <p>Cliquez sur une note pour écouter l'enregistrement.</p>
+</header>
+
+<main id="app"></main>
+
+<footer>Enregistrements&nbsp;: dossier <code>solsolsol/</code></footer>
+
+<script>
+  // Noms des 24 hauteurs (quarts de ton) en descendant à partir de Sol
+  const NAMES = [
+    "Sol", "Sol ½♭", "Sol ♭", "Fa ½♯", "Fa", "Fa ½♭",
+    "Mi", "Mi ½♭", "Mi ♭", "Ré ½♯", "Ré", "Ré ½♭",
+    "Ré ♭", "Do ½♯", "Do", "Do ½♭", "Si", "Si ½♭",
+    "Si ♭", "La ½♯", "La", "La ½♭", "La ♭", "Sol ½♯"
+  ];
+
+  const TOTAL = 49; // 0..48 (sol -> sol -> sol)
+  const FOLDER = "solsolsol";
+
+  // Nom du fichier correspondant à l'index de la note
+  function fileFor(i) {
+    const base = (i === 0) ? "sans titre.wav" : "sans titre-" + (i + 1) + ".wav";
+    return FOLDER + "/" + encodeURIComponent(base);
+  }
+
+  const app = document.getElementById("app");
+  let current = null; // bouton en cours de lecture
+  const audio = new Audio();
+
+  function makeOctave(title, start, end) {
+    const sec = document.createElement("section");
+    sec.className = "octave";
+    const h = document.createElement("h2");
+    h.textContent = title;
+    sec.appendChild(h);
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    for (let i = start; i <= end && i < TOTAL; i++) {
+      const oct = Math.floor(i / 24);
+      const name = NAMES[i % 24] + (oct ? " " + "'".repeat(oct) : "");
+      const btn = document.createElement("button");
+      btn.className = "note";
+      btn.innerHTML = name + '<span class="idx">n°' + (i + 1) + '</span>';
+      btn.addEventListener("click", () => play(i, btn));
+      grid.appendChild(btn);
+    }
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  function play(i, btn) {
+    if (current) current.classList.remove("playing");
+    audio.src = fileFor(i);
+    audio.currentTime = 0;
+    audio.play().catch(err => console.warn("Lecture impossible :", err));
+    btn.classList.add("playing");
+    current = btn;
+  }
+
+  audio.addEventListener("ended", () => {
+    if (current) { current.classList.remove("playing"); current = null; }
+  });
+
+  app.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
+  app.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
+  app.appendChild(makeOctave("Sol grave final (note 49)", 48, 48));
+</script>
+</body>
+</html>
