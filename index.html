@@ -372,9 +372,7 @@
       oscs.push(o);
     }
 
-    const handle = { onended: null, stop() { oscs.forEach(o => { try { o.stop(); } catch (e) {} }); } };
-    oscs[0].onended = () => { if (handle.onended) handle.onended(); };
-    return handle;
+    return { env, nodes: oscs };
   }
 
   // Échantillon de référence transposé : sans titre-24.wav (note 24, 189 Hz),
@@ -389,23 +387,26 @@
       .then(buf => { refBuffer = buf; return buf; });
   }
 
-  // Crée et démarre une « voix » (nœud stoppable) pour la note i, connectée au gain maître
-  function spawn(i) {
-    if (SOURCE === "sample") {
-      // Rééchantillonnage : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
-      const s = ctx.createBufferSource();
-      s.buffer = refBuffer;
-      s.playbackRate.value = Math.pow(2, (i - REF) / 24);
-      s.connect(gainNode);
-      s.start(0);
-      return s;
-    }
-    if (SOURCE !== "rec") return spawnSynth(i);
+  // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
+  function bufferVoice(buf, rate) {
     const s = ctx.createBufferSource();
-    s.buffer = buffers[i];
-    s.connect(gainNode);
+    s.buffer = buf;
+    if (rate) s.playbackRate.value = rate;
+    const env = ctx.createGain();
+    const now = ctx.currentTime;
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.linearRampToValueAtTime(1, now + 0.006); // fondu d'entrée
+    s.connect(env).connect(gainNode);
     s.start(0);
-    return s;
+    return { env, nodes: [s] };
+  }
+
+  // Crée et démarre une « voix » pour la note i. Renvoie une poignée { env, nodes }
+  function spawn(i) {
+    // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
+    if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
+    if (SOURCE !== "rec") return spawnSynth(i);
+    return bufferVoice(buffers[i]);
   }
 
   // Lance la note i ; btn (optionnel) = bouton à mettre en surbrillance
@@ -414,12 +415,12 @@
     if (ctx.state === "suspended") ctx.resume();
     const begin = () => {
       stop();
-      const node = spawn(i);
-      currentSource = node;
+      const voice = spawn(i);
+      currentSource = voice;
       if (btn) { current = btn; btn.classList.add("playing"); }
       if (reveal) { status.textContent = "▶ Note n°" + (i + 1); status.style.color = ""; }
-      node.onended = () => {
-        if (currentSource === node) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
+      voice.nodes[0].onended = () => {
+        if (currentSource === voice) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
       };
     };
     // Échantillon transposé : a besoin de refBuffer
@@ -438,7 +439,17 @@
   }
 
   function stop() {
-    if (currentSource) { try { currentSource.onended = null; currentSource.stop(); } catch (e) {} currentSource = null; }
+    if (currentSource) {
+      const v = currentSource; currentSource = null;
+      const now = ctx.currentTime;
+      v.nodes.forEach(n => { try { n.onended = null; } catch (e) {} });
+      try {
+        v.env.gain.cancelScheduledValues(now);
+        v.env.gain.setValueAtTime(Math.max(0.0001, v.env.gain.value), now);
+        v.env.gain.linearRampToValueAtTime(0.0001, now + 0.015); // fondu de sortie anti-clic
+      } catch (e) {}
+      v.nodes.forEach(n => { try { n.stop(now + 0.03); } catch (e) {} });
+    }
     if (current) { current.classList.remove("playing"); current = null; }
   }
 
