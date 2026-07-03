@@ -117,6 +117,7 @@
   <label style="font-size:.9rem;opacity:.85;">🎛 Source
     <select id="source" style="border-radius:8px;padding:5px 8px;font-size:.9rem;background:#3a2a5e;color:#f4f0ff;border:none;">
       <option value="rec">Enregistrement</option>
+      <option value="sample">Échantillon (voix transposée)</option>
       <option value="tri">Synthé (G2→G4)</option>
       <option value="oud">Oud / عود (synthétique)</option>
       <option value="piano">Piano (synthétique)</option>
@@ -376,8 +377,21 @@
     return handle;
   }
 
+  // Échantillon de référence transposé : sans titre-24.wav (note 24, 189 Hz),
+  // le plus clair et central des enregistrements → transposition minimale.
+  const REF = 23;
+
   // Crée et démarre une « voix » (nœud stoppable) pour la note i, connectée au gain maître
   function spawn(i) {
+    if (SOURCE === "sample") {
+      // Rééchantillonnage : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
+      const s = ctx.createBufferSource();
+      s.buffer = buffers[REF];
+      s.playbackRate.value = Math.pow(2, (i - REF) / 24);
+      s.connect(gainNode);
+      s.start(0);
+      return s;
+    }
     if (SOURCE !== "rec") return spawnSynth(i);
     const s = ctx.createBufferSource();
     s.buffer = buffers[i];
@@ -400,9 +414,11 @@
         if (currentSource === node) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
       };
     };
-    if (SOURCE !== "rec" || buffers[i]) { begin(); return; }
+    // Quel buffer faut-il ? note i (enregistrement), REF (échantillon transposé), ou aucun (synthé)
+    const need = SOURCE === "rec" ? i : (SOURCE === "sample" ? REF : -1);
+    if (need < 0 || buffers[need]) { begin(); return; }
     if (reveal) status.textContent = "⏳ Chargement…";
-    loadBuffer(i).then(begin).catch(err => {
+    loadBuffer(need).then(begin).catch(err => {
       if (reveal) { status.textContent = "⚠ Impossible de lire la note n°" + (i + 1) + " — " + err.message; status.style.color = "#ff8a8a"; }
     });
   }
