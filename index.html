@@ -134,14 +134,7 @@
   <div class="panel" style="max-width:760px;">
     <h2>🎼 Jins (gamme)</h2>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <label style="font-size:.9rem;">Jins
-        <select id="jins-libre">
-          <option value="">— Aucun (chromatique complet) —</option>
-          <option value="nahawand">Nahawand</option>
-          <option value="hijaz">Hijaz</option>
-          <option value="bayati">Bayati</option>
-        </select>
-      </label>
+      <label style="font-size:.9rem;">Jins <select id="jins-libre"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-libre"></select></label>
     </div>
     <div class="grid" id="jins-notes" style="margin-top:16px;"></div>
@@ -155,14 +148,7 @@
     <h2>🎧 Dictée musicale — configuration</h2>
     <h3>Jins (optionnel)</h3>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <label style="font-size:.9rem;">Jins
-        <select id="jins-dictee">
-          <option value="">— Aucun —</option>
-          <option value="nahawand">Nahawand</option>
-          <option value="hijaz">Hijaz</option>
-          <option value="bayati">Bayati</option>
-        </select>
-      </label>
+      <label style="font-size:.9rem;">Jins <select id="jins-dictee"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-dictee"></select></label>
     </div>
     <p style="opacity:.7;font-size:.85rem;margin:8px 0 0;">Si un jins est choisi, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
@@ -222,9 +208,21 @@
 
   // Ajnas (gammes) : intervalles en tons -> pas d'index (1 ton = 4 quarts de ton = 4 pas)
   const JINS = {
-    nahawand: { name: "Nahawand", steps: [4, 2, 4] }, // 1, ½, 1
-    hijaz:    { name: "Hijaz",    steps: [2, 6, 4] }, // ½, 1½, 1
-    bayati:   { name: "Bayati",   steps: [3, 3, 4] }  // ¾, ¾, 1
+    // Tétracordes (4 notes)
+    ajam:      { name: "Ajam (1,1,½)",           steps: [4, 4, 2] },
+    nahawand:  { name: "Nahawand (1,½,1)",        steps: [4, 2, 4] },
+    busalik:   { name: "Busalik (1,½,1)",         steps: [4, 2, 4] },
+    kurd:      { name: "Kurd (½,1,1)",            steps: [2, 4, 4] },
+    hijaz:     { name: "Hijaz (½,1½,½)",          steps: [2, 6, 2] },
+    bayati:    { name: "Bayati (¾,¾,1)",          steps: [3, 3, 4] },
+    rast:      { name: "Rast (1,¾,¾)",            steps: [4, 3, 3] },
+    saba:      { name: "Saba (¾,¾,½)",            steps: [3, 3, 2] },
+    // Trichordes (3 notes)
+    sikah:     { name: "Sikah (¾,1)",             steps: [3, 4] },
+    jiharkah:  { name: "Jiharkah (1,½)",          steps: [4, 2] },
+    // Pentacordes (5 notes)
+    nikriz:    { name: "Nikriz (1,½,1½,½)",       steps: [4, 2, 6, 2] },
+    atharkurd: { name: "Athar Kurd (½,1½,½,1)",   steps: [2, 6, 2, 4] }
   };
   function jinsDegrees(key, tonic) {
     const degs = [tonic]; let cur = tonic;
@@ -236,6 +234,14 @@
     for (let i = 0; i < TOTAL; i++) {
       const o = document.createElement("option");
       o.value = i; o.textContent = (i + 1) + " — " + noteName(i);
+      sel.appendChild(o);
+    }
+  }
+  function fillJins(sel, noneLabel) {
+    sel.innerHTML = '<option value="">' + noneLabel + '</option>';
+    for (const key in JINS) {
+      const o = document.createElement("option");
+      o.value = key; o.textContent = JINS[key].name;
       sel.appendChild(o);
     }
   }
@@ -461,6 +467,7 @@
   const jinsLibre = document.getElementById("jins-libre");
   const tonicLibre = document.getElementById("tonic-libre");
   const jinsNotes = document.getElementById("jins-notes");
+  fillJins(jinsLibre, "— Aucun (chromatique complet) —");
   fillTonic(tonicLibre);
   function renderJinsLibre() {
     jinsNotes.innerHTML = "";
@@ -569,6 +576,7 @@
 
   const jinsDictee = document.getElementById("jins-dictee");
   const tonicDictee = document.getElementById("tonic-dictee");
+  fillJins(jinsDictee, "— Aucun —");
   fillTonic(tonicDictee);
 
   document.getElementById("start-dictee").addEventListener("click", () => {
