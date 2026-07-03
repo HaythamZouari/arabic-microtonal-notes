@@ -115,7 +115,9 @@
   <label style="font-size:.9rem;opacity:.85;">🎛 Source
     <select id="source" style="border-radius:8px;padding:5px 8px;font-size:.9rem;background:#3a2a5e;color:#f4f0ff;border:none;">
       <option value="rec">Enregistrement</option>
-      <option value="synth">Synthétique (G2→G4)</option>
+      <option value="tri">Synthé (G2→G4)</option>
+      <option value="piano">Piano (synthétique)</option>
+      <option value="violin">Violon (synthétique)</option>
     </select>
   </label>
   <label style="font-size:.9rem;opacity:.85;">🔊 Gain
@@ -219,26 +221,80 @@
   const G2 = 98.0;
   const freqFor = i => G2 * Math.pow(2, i / 24);
 
-  // Source active : "rec" (enregistrement) ou "synth" (son généré)
+  // Source active : "rec" (enregistrement), "tri" (synthé simple), "piano", "violin"
   let SOURCE = "rec";
+
+  // Voix synthétique : renvoie une poignée { stop(), onended } commune à toutes les sources
+  function spawnSynth(i) {
+    const now = ctx.currentTime, freq = freqFor(i);
+    const oscs = [];
+    const env = ctx.createGain();
+    env.connect(gainNode);
+    let DUR;
+
+    if (SOURCE === "piano") {
+      DUR = 2.2;
+      // Synthèse additive : fondamentale + harmoniques, timbre percussif qui décroît
+      [[1, 1.0], [2, 0.55], [3, 0.3], [4, 0.14], [5, 0.07], [6, 0.04]].forEach(([mult, amp]) => {
+        const o = ctx.createOscillator();
+        o.type = "sine";
+        o.frequency.value = freq * mult;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(amp, now + 0.005);          // attaque nette
+        g.gain.exponentialRampToValueAtTime(0.0001, now + DUR);    // décroissance
+        o.connect(g).connect(env);
+        o.start(now); o.stop(now + DUR);
+        oscs.push(o);
+      });
+      env.gain.value = 0.7;
+
+    } else if (SOURCE === "violin") {
+      DUR = 1.9;
+      const o = ctx.createOscillator();
+      o.type = "sawtooth"; // riche en harmoniques
+      o.frequency.value = freq;
+      // Vibrato
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 5.5;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = freq * 0.006;
+      lfo.connect(lfoGain).connect(o.frequency);
+      // Filtre passe-bas pour adoucir
+      const filt = ctx.createBiquadFilter();
+      filt.type = "lowpass";
+      filt.frequency.value = Math.min(9000, freq * 6);
+      o.connect(filt).connect(env);
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.linearRampToValueAtTime(0.55, now + 0.14);          // attaque lente (archet)
+      env.gain.setValueAtTime(0.55, now + DUR - 0.2);
+      env.gain.linearRampToValueAtTime(0.0001, now + DUR);
+      o.start(now); o.stop(now + DUR);
+      lfo.start(now); lfo.stop(now + DUR);
+      oscs.push(o, lfo);
+
+    } else { // "tri" : synthé simple
+      DUR = 1.4;
+      const o = ctx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = freq;
+      o.connect(env);
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.linearRampToValueAtTime(0.85, now + 0.02);
+      env.gain.setValueAtTime(0.85, now + DUR - 0.25);
+      env.gain.linearRampToValueAtTime(0.0001, now + DUR);
+      o.start(now); o.stop(now + DUR);
+      oscs.push(o);
+    }
+
+    const handle = { onended: null, stop() { oscs.forEach(o => { try { o.stop(); } catch (e) {} }); } };
+    oscs[0].onended = () => { if (handle.onended) handle.onended(); };
+    return handle;
+  }
 
   // Crée et démarre une « voix » (nœud stoppable) pour la note i, connectée au gain maître
   function spawn(i) {
-    if (SOURCE === "synth") {
-      const osc = ctx.createOscillator();
-      const env = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = freqFor(i);
-      const now = ctx.currentTime, DUR = 1.4;
-      env.gain.setValueAtTime(0, now);
-      env.gain.linearRampToValueAtTime(0.85, now + 0.02);   // attaque
-      env.gain.setValueAtTime(0.85, now + DUR - 0.25);
-      env.gain.linearRampToValueAtTime(0, now + DUR);        // extinction
-      osc.connect(env).connect(gainNode);
-      osc.start(now);
-      osc.stop(now + DUR);
-      return osc;
-    }
+    if (SOURCE !== "rec") return spawnSynth(i);
     const s = ctx.createBufferSource();
     s.buffer = buffers[i];
     s.connect(gainNode);
@@ -260,7 +316,7 @@
         if (currentSource === node) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
       };
     };
-    if (SOURCE === "synth" || buffers[i]) { begin(); return; }
+    if (SOURCE !== "rec" || buffers[i]) { begin(); return; }
     if (reveal) status.textContent = "⏳ Chargement…";
     loadBuffer(i).then(begin).catch(err => {
       if (reveal) { status.textContent = "⚠ Impossible de lire la note n°" + (i + 1) + " — " + err.message; status.style.color = "#ff8a8a"; }
