@@ -378,15 +378,23 @@
   }
 
   // Échantillon de référence transposé : sans titre-24.wav (note 24, 189 Hz),
-  // le plus clair et central des enregistrements → transposition minimale.
+  // recadré sur l'attaque (silence de début supprimé) → réponse immédiate.
   const REF = 23;
+  let refBuffer = null;
+  function loadRef() {
+    if (refBuffer) return Promise.resolve(refBuffer);
+    return fetch(FOLDER + "/ref.wav")
+      .then(r => r.arrayBuffer())
+      .then(ab => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
+      .then(buf => { refBuffer = buf; return buf; });
+  }
 
   // Crée et démarre une « voix » (nœud stoppable) pour la note i, connectée au gain maître
   function spawn(i) {
     if (SOURCE === "sample") {
       // Rééchantillonnage : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
       const s = ctx.createBufferSource();
-      s.buffer = buffers[REF];
+      s.buffer = refBuffer;
       s.playbackRate.value = Math.pow(2, (i - REF) / 24);
       s.connect(gainNode);
       s.start(0);
@@ -414,11 +422,17 @@
         if (currentSource === node) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
       };
     };
-    // Quel buffer faut-il ? note i (enregistrement), REF (échantillon transposé), ou aucun (synthé)
-    const need = SOURCE === "rec" ? i : (SOURCE === "sample" ? REF : -1);
-    if (need < 0 || buffers[need]) { begin(); return; }
+    // Échantillon transposé : a besoin de refBuffer
+    if (SOURCE === "sample") {
+      if (refBuffer) { begin(); return; }
+      if (reveal) status.textContent = "⏳ Chargement…";
+      loadRef().then(begin).catch(() => { if (reveal) status.textContent = "⚠ Échantillon indisponible"; });
+      return;
+    }
+    // Enregistrement : a besoin du buffer de la note i ; synthé : aucun
+    if (SOURCE !== "rec" || buffers[i]) { begin(); return; }
     if (reveal) status.textContent = "⏳ Chargement…";
-    loadBuffer(need).then(begin).catch(err => {
+    loadBuffer(i).then(begin).catch(err => {
       if (reveal) { status.textContent = "⚠ Impossible de lire la note n°" + (i + 1) + " — " + err.message; status.style.color = "#ff8a8a"; }
     });
   }
@@ -620,6 +634,7 @@
   // Le décodage ne nécessite pas de geste utilisateur ; seule la lecture en exige un.
   function prefetchAll() {
     initCtx();
+    loadRef().catch(() => {}); // échantillon transposé prêt d'emblée
     let done = 0;
     const CONCURRENCY = 6;
     let k = 0;
