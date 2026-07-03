@@ -116,6 +116,7 @@
     <select id="source" style="border-radius:8px;padding:5px 8px;font-size:.9rem;background:#3a2a5e;color:#f4f0ff;border:none;">
       <option value="rec">Enregistrement</option>
       <option value="tri">Synthé (G2→G4)</option>
+      <option value="oud">Oud / عود (synthétique)</option>
       <option value="piano">Piano (synthétique)</option>
       <option value="violin">Violon (synthétique)</option>
     </select>
@@ -272,6 +273,28 @@
       o.start(now); o.stop(now + DUR);
       lfo.start(now); lfo.stop(now + DUR);
       oscs.push(o, lfo);
+
+    } else if (SOURCE === "oud") {
+      DUR = 1.7;
+      // Oud : corde pincée, chaude, avec cordes doublées (léger désaccord)
+      const filt = ctx.createBiquadFilter();
+      filt.type = "lowpass";
+      filt.frequency.value = Math.min(6500, freq * 8);
+      filt.Q.value = 0.7;
+      filt.connect(env);
+      [-5, 5].forEach(cents => { // double corde ±5 cents
+        const o = ctx.createOscillator();
+        o.type = "sawtooth";
+        o.frequency.value = freq * Math.pow(2, cents / 1200);
+        const g = ctx.createGain();
+        g.gain.value = 0.5;
+        o.connect(g).connect(filt);
+        o.start(now); o.stop(now + DUR);
+        oscs.push(o);
+      });
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.linearRampToValueAtTime(0.8, now + 0.004);       // pincement
+      env.gain.exponentialRampToValueAtTime(0.0001, now + DUR); // décroissance
 
     } else { // "tri" : synthé simple
       DUR = 1.4;
