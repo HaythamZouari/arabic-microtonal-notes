@@ -83,6 +83,8 @@
   .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
   .checks label { display: flex; align-items: center; gap: 6px; font-size: .9rem;
     background: rgba(255,255,255,.06); padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .panel select { border-radius: 8px; padding: 5px 8px; font-size: .9rem;
+    background: #3a2a5e; color: #f4f0ff; border: none; margin-left: 4px; }
   .btn {
     cursor: pointer; border: none; border-radius: 12px; padding: 12px 22px;
     font-weight: 700; font-size: 1rem; color: #1b1033;
@@ -128,12 +130,42 @@
 </div>
 <p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
 
-<main id="app"></main>
+<main id="app">
+  <div class="panel" style="max-width:760px;">
+    <h2>🎼 Jins (gamme)</h2>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <label style="font-size:.9rem;">Jins
+        <select id="jins-libre">
+          <option value="">— Aucun (chromatique complet) —</option>
+          <option value="nahawand">Nahawand</option>
+          <option value="hijaz">Hijaz</option>
+          <option value="bayati">Bayati</option>
+        </select>
+      </label>
+      <label style="font-size:.9rem;">Tonale <select id="tonic-libre"></select></label>
+    </div>
+    <div class="grid" id="jins-notes" style="margin-top:16px;"></div>
+  </div>
+  <div id="chromatic"></div>
+</main>
 
 <section id="dictee" class="hidden">
   <!-- Configuration -->
   <div class="panel" id="dictee-config">
     <h2>🎧 Dictée musicale — configuration</h2>
+    <h3>Jins (optionnel)</h3>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <label style="font-size:.9rem;">Jins
+        <select id="jins-dictee">
+          <option value="">— Aucun —</option>
+          <option value="nahawand">Nahawand</option>
+          <option value="hijaz">Hijaz</option>
+          <option value="bayati">Bayati</option>
+        </select>
+      </label>
+      <label style="font-size:.9rem;">Tonale <select id="tonic-dictee"></select></label>
+    </div>
+    <p style="opacity:.7;font-size:.85rem;margin:8px 0 0;">Si un jins est choisi, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
     <h3>Octave(s)</h3>
     <div class="checks" id="oct-checks">
       <label><input type="checkbox" class="oct" value="0" checked> 1ʳᵉ octave</label>
@@ -183,6 +215,29 @@
   // Nom du fichier correspondant à l'index de la note
   function fileFor(i) {
     return FOLDER + "/note-" + i + ".wav";
+  }
+
+  // Nom affiché d'une note (avec marqueur d'octave)
+  const noteName = i => NAMES[i % 24] + (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
+
+  // Ajnas (gammes) : intervalles en tons -> pas d'index (1 ton = 4 quarts de ton = 4 pas)
+  const JINS = {
+    nahawand: { name: "Nahawand", steps: [4, 2, 4] }, // 1, ½, 1
+    hijaz:    { name: "Hijaz",    steps: [2, 6, 4] }, // ½, 1½, 1
+    bayati:   { name: "Bayati",   steps: [3, 3, 4] }  // ¾, ¾, 1
+  };
+  function jinsDegrees(key, tonic) {
+    const degs = [tonic]; let cur = tonic;
+    for (const st of JINS[key].steps) { cur += st; degs.push(cur); }
+    return degs.filter(d => d >= 0 && d < TOTAL);
+  }
+  function fillTonic(sel) {
+    sel.innerHTML = "";
+    for (let i = 0; i < TOTAL; i++) {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = (i + 1) + " — " + noteName(i);
+      sel.appendChild(o);
+    }
   }
 
   const app = document.getElementById("app");
@@ -397,13 +452,33 @@
     stop();
   });
 
-  app.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
-  app.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
-  app.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
+  const chromatic = document.getElementById("chromatic");
+  chromatic.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
+  chromatic.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
+  chromatic.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
+
+  // ---- Jins en écoute libre ----
+  const jinsLibre = document.getElementById("jins-libre");
+  const tonicLibre = document.getElementById("tonic-libre");
+  const jinsNotes = document.getElementById("jins-notes");
+  fillTonic(tonicLibre);
+  function renderJinsLibre() {
+    jinsNotes.innerHTML = "";
+    const key = jinsLibre.value;
+    chromatic.classList.toggle("hidden", !!key); // masque le chromatique si un jins est choisi
+    if (!key) return;
+    jinsDegrees(key, +tonicLibre.value).forEach((d, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "note";
+      btn.innerHTML = noteName(d) + '<span class="idx">degré ' + (idx + 1) + '</span>';
+      btn.addEventListener("click", () => play(d, btn));
+      jinsNotes.appendChild(btn);
+    });
+  }
+  jinsLibre.addEventListener("change", renderJinsLibre);
+  tonicLibre.addEventListener("change", renderJinsLibre);
 
   // ================= MODE DICTÉE =================
-  const noteName = i => NAMES[i % 24] + (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
-
   // Onglets
   const tabLibre = document.getElementById("tab-libre");
   const tabDictee = document.getElementById("tab-dictee");
@@ -492,9 +567,14 @@
     nextBtn.classList.remove("hidden");
   }
 
+  const jinsDictee = document.getElementById("jins-dictee");
+  const tonicDictee = document.getElementById("tonic-dictee");
+  fillTonic(tonicDictee);
+
   document.getElementById("start-dictee").addEventListener("click", () => {
-    pool = buildPool();
-    if (pool.length < 2) { cfgMsg.textContent = "Sélectionne au moins 2 notes (octave + notes)."; return; }
+    const jkey = jinsDictee.value;
+    pool = jkey ? jinsDegrees(jkey, +tonicDictee.value) : buildPool();
+    if (pool.length < 2) { cfgMsg.textContent = jkey ? "Le jins ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
     cfgMsg.textContent = "";
     good = 0; tot = 0;
     scoreEl.textContent = "Score : 0 / 0";
