@@ -134,9 +134,9 @@
 
 <main id="app">
   <div class="panel" style="max-width:760px;">
-    <h2>🎼 Jins (gamme)</h2>
+    <h2>🎼 Jins / Maqam</h2>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <label style="font-size:.9rem;">Jins <select id="jins-libre"></select></label>
+      <label style="font-size:.9rem;">Gamme <select id="jins-libre"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-libre"></select></label>
     </div>
     <div class="grid" id="jins-notes" style="margin-top:16px;"></div>
@@ -148,12 +148,12 @@
   <!-- Configuration -->
   <div class="panel" id="dictee-config">
     <h2>🎧 Dictée musicale — configuration</h2>
-    <h3>Jins (optionnel)</h3>
+    <h3>Jins / Maqam (optionnel)</h3>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <label style="font-size:.9rem;">Jins <select id="jins-dictee"></select></label>
+      <label style="font-size:.9rem;">Gamme <select id="jins-dictee"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-dictee"></select></label>
     </div>
-    <p style="opacity:.7;font-size:.85rem;margin:8px 0 0;">Si un jins est choisi, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
+    <p style="opacity:.7;font-size:.85rem;margin:8px 0 0;">Si une gamme (jins ou maqam) est choisie, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
     <h3>Octave(s)</h3>
     <div class="checks" id="oct-checks">
       <label><input type="checkbox" class="oct" value="0" checked> 1ʳᵉ octave</label>
@@ -228,6 +228,31 @@
     for (const st of JINS[key].steps) { cur += st; degs.push(cur); }
     return degs.filter(d => d >= 0 && d < TOTAL);
   }
+
+  // Maqamat : combinaison d'ajnas placés à un décalage (en pas) depuis la tonale.
+  // Formes tétracordes de référence + degrés usuels : quinte (Nawa)=14, octave=24.
+  const T_RAST = [4, 3, 3];    // 1, ¾, ¾
+  const T_BAYATI = [3, 3, 4];  // ¾, ¾, 1
+  const MAQAM = {
+    rast_asli:    { name: "Rast asli (rast+rast+rast)",  jins: [[T_RAST, 0], [T_RAST, 14], [T_RAST, 24]] },
+    rast_nayrouz: { name: "Rast Nayrouz (rast+bayati)",  jins: [[T_RAST, 0], [T_BAYATI, 14]] }
+  };
+  function maqamDegrees(key, tonic) {
+    const set = new Set();
+    MAQAM[key].jins.forEach(([steps, off]) => {
+      let cur = tonic + off; set.add(cur);
+      for (const st of steps) { cur += st; set.add(cur); }
+    });
+    return [...set].filter(d => d >= 0 && d < TOTAL).sort((a, b) => a - b);
+  }
+
+  // Aiguillage : une valeur "jins:xxx" ou "maqam:xxx" -> liste de degrés
+  function scaleDegrees(value, tonic) {
+    if (!value) return [];
+    const sep = value.indexOf(":");
+    const type = value.slice(0, sep), key = value.slice(sep + 1);
+    return type === "maqam" ? maqamDegrees(key, tonic) : jinsDegrees(key, tonic);
+  }
   function fillTonic(sel) {
     sel.innerHTML = "";
     for (let i = 0; i < TOTAL; i++) {
@@ -238,11 +263,20 @@
   }
   function fillJins(sel, noneLabel) {
     sel.innerHTML = '<option value="">' + noneLabel + '</option>';
+    const gj = document.createElement("optgroup"); gj.label = "Ajnas";
     for (const key in JINS) {
       const o = document.createElement("option");
-      o.value = key; o.textContent = JINS[key].name;
-      sel.appendChild(o);
+      o.value = "jins:" + key; o.textContent = JINS[key].name;
+      gj.appendChild(o);
     }
+    sel.appendChild(gj);
+    const gm = document.createElement("optgroup"); gm.label = "Maqamat";
+    for (const key in MAQAM) {
+      const o = document.createElement("option");
+      o.value = "maqam:" + key; o.textContent = MAQAM[key].name;
+      gm.appendChild(o);
+    }
+    sel.appendChild(gm);
   }
 
   const app = document.getElementById("app");
@@ -532,10 +566,10 @@
   fillTonic(tonicLibre);
   function renderJinsLibre() {
     jinsNotes.innerHTML = "";
-    const key = jinsLibre.value;
-    chromatic.classList.toggle("hidden", !!key); // masque le chromatique si un jins est choisi
-    if (!key) return;
-    jinsDegrees(key, +tonicLibre.value).forEach((d, idx) => {
+    const val = jinsLibre.value;
+    chromatic.classList.toggle("hidden", !!val); // masque le chromatique si une gamme est choisie
+    if (!val) return;
+    scaleDegrees(val, +tonicLibre.value).forEach((d, idx) => {
       const btn = document.createElement("button");
       btn.className = "note";
       btn.innerHTML = noteName(d) + '<span class="idx">degré ' + (idx + 1) + '</span>';
@@ -642,8 +676,8 @@
 
   document.getElementById("start-dictee").addEventListener("click", () => {
     const jkey = jinsDictee.value;
-    pool = jkey ? jinsDegrees(jkey, +tonicDictee.value) : buildPool();
-    if (pool.length < 2) { cfgMsg.textContent = jkey ? "Le jins ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
+    pool = jkey ? scaleDegrees(jkey, +tonicDictee.value) : buildPool();
+    if (pool.length < 2) { cfgMsg.textContent = jkey ? "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
     cfgMsg.textContent = "";
     good = 0; tot = 0;
     scoreEl.textContent = "Score : 0 / 0";
