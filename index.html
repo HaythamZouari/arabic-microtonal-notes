@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -278,7 +278,7 @@
   ];
 
   // ---- Internationalisation (FR / EN / AR) ----
-  let LANG = "fr";
+  let LANG = "ar";
   const I18N = {
     fr: {
       subtitle: "Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins & dictée",
@@ -389,7 +389,7 @@
     nikriz:          { name: "Nikriz",           jins: [[BF.nikriz, 0], [BF.nahawand, 14]] },
     nawa_athar:      { name: "Nawa Athar",       jins: [[BF.nikriz, 0], [BF.hijaz, 14]] },
     hijazkar:        { name: "Hijazkar",         jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.hijaz, 24]] },
-    zanjaran:        { name: "Zanjaran (Zankoulah)", jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
+    zanjaran:        { name: "Zankoulah",       jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
     hijazkar_kurd:   { name: "Hijazkar Kurd",    jins: [[BF.kurd, 0], [BF.nahawand, 10], [BF.kurd, 24]] },
     bayati_asli:     { name: "Bayati asli",      jins: [[BF.bayati, 0], [BF.rast, 10]],
                        alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
@@ -425,7 +425,7 @@
   const MAQAM_AR = {
     rast_asli: "رست أصلي", rast_nayrouz: "رست نيروز", rast_souznak: "رست سوزناك", rast_dalanshin: "رست دلنشين",
     nahawand: "نهاوند", nikriz: "نكريز", nawa_athar: "نوى أثر", hijazkar: "حجازكار",
-    zanjaran: "زنجران (زنكولاه)", hijazkar_kurd: "حجازكار كرد",
+    zanjaran: "زنكوله", hijazkar_kurd: "حجازكار كرد",
     bayati_asli: "بياتي أصلي", bayati_muhayyar: "بياتي محير", bayati_shuri: "بياتي شوري",
     hijaz: "حجاز", shahnaz: "شهناز", kurd: "كرد", saba: "صبا",
     huzam: "سيكاه هزام", rahat_arwah: "راحة الأرواح", iraq: "عراق", bastanikar: "بستنكار",
@@ -980,7 +980,7 @@
     if (!game.classList.contains("hidden")) scoreEl.textContent = t("score") + " : " + good + " / " + tot;
   }
   document.querySelectorAll(".langbtn").forEach(b => b.addEventListener("click", () => applyLang(b.dataset.lang)));
-  applyLang("fr");
+  applyLang("ar"); // arabe par défaut
 
   // Préchargement en arrière-plan dès l'ouverture (fichiers légers) — clics instantanés.
   // Le décodage ne nécessite pas de geste utilisateur ; seule la lecture en exige un.
