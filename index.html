@@ -324,12 +324,12 @@
       lbl_instrument: "🎛 الآلة", gain_oud: "🔊 مستوى العود",
       src_oud: "عود", src_violin: "كمان", src_piano: "بيانو",
       h_jinsmaqam: "🎼 الجنس / المقام", lbl_jins: "جنس", lbl_maqam: "مقام", lbl_variante: "إمكانيات", lbl_tonale: "إرتكاز",
-      btn_to_dictee: "🎧 الانتقال إلى الإملاء على هذه الجملة",
+      btn_to_dictee: "🎧 الانتقال إلى الإملاء على هذا المقام",
       h_dictee: "🎧 الإملاء الموسيقي", h_jinsmaqam_opt: "الجنس / المقام (اختياري)",
       help_dictee: "يعتمد الإملاء على نغمات الجنس أو المقام المختار.",
       btn_start: "▶ ابدأ الإملاء", btn_replay: "🔊 إعادة سماع النغمة",
       ask: "ما النغمة التي سمعتها؟", btn_next: "النغمة التالية ▶",
-      btn_to_libre: "🎹 استماع حر على هذه الجملة", btn_back_config: "⚙ تغيير الإعدادات",
+      btn_to_libre: "🎹 استماع حر على هذا المقام", btn_back_config: "⚙ تغيير الإعدادات",
       none: "— لا شيء —", degre: "الدرجة", score: "النتيجة", correct: "✓ صحيح! كانت", wrong: "✗ خطأ. كانت",
       pick_scale: "اختر جنساً أو مقاماً لبدء الإملاء.",
       out_of_range: "لا تتّسع الجملة في المدى عند هذا الأساس — اختر أساساً أخفض.",
@@ -412,25 +412,25 @@
     rast_souznak:    { name: "Rast Souznak",     jins: [[BF.rast, 0], [BF.hijaz, 14]] },
     rast_dalanshin:  { name: "Rast Dalanshin",   jins: [[BF.rast, 0], [BF.saba, 18]] },
     nahawand:        { name: "Nahawand",         jins: [[BF.nahawand, 0], [BF.hijaz, 14]],
-                       alt: { index: 1, options: [["Hijaz (sur sol)", BF.hijaz], ["Kurd (sur sol)", BF.kurd]] } },
+                       alt: { index: 1, options: [["Hijaz (sur sol)", BF.hijaz, "حجاز (على صول)"], ["Kurd (sur sol)", BF.kurd, "كرد (على صول)"]] } },
     nikriz:          { name: "Nikriz",           jins: [[BF.nikriz, 0], [BF.nahawand, 14]] },
     nawa_athar:      { name: "Nawa Athar",       jins: [[BF.nikriz, 0], [BF.hijaz, 14]] },
     hijazkar:        { name: "Hijazkar",         jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.hijaz, 24]] },
     zanjaran:        { name: "Zankoulah",       jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
     hijazkar_kurd:   { name: "Hijazkar Kurd",    jins: [[BF.kurd, 0], [BF.nahawand, 10], [BF.kurd, 24]] },
     bayati_asli:     { name: "Bayati asli",      jins: [[BF.bayati, 0], [BF.rast, 10]],
-                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast, "رست (على صول)"], ["Nahawand (sur sol)", BF.nahawand, "نهاوند (على صول)"]] } },
     bayati_muhayyar: { name: "Bayati Mouhayyar", jins: [[BF.bayati, 0], [BF.rast, 10], [BF.bayati, 24]] },
     bayati_shuri:    { name: "Bayati Chouri",    jins: [[BF.bayati, 0], [BF.hijaz, 10], [BF.bayati, 24]] },
     hijaz:           { name: "Hijaz",            jins: [[BF.hijaz, 0], [BF.rast, 10], [BF.hijaz, 24]],
-                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast, "رست (على صول)"], ["Nahawand (sur sol)", BF.nahawand, "نهاوند (على صول)"]] } },
     shahnaz:         { name: "Chahnaz",          jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.nahawand, 24]] },
     kurd:            { name: "Kurd",             jins: [[BF.kurd, 0], [BF.nahawand, 10]] },
     saba:            { name: "Saba",             jins: [[BF.saba, 0], [BF.hijaz, 6], [BF.hijaz, 20]] },
     huzam:           { name: "Sika Houzam",      jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
     rahat_arwah:     { name: "Rahat al-Arwah",   jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
     iraq:            { name: "Araq (Iraq)",      jins: [[BF.sikah, 0], [BF.bayati, 7], [BF.rast, 17]],
-                       alt: { index: 2, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+                       alt: { index: 2, options: [["Rast (sur sol)", BF.rast, "رست (على صول)"], ["Nahawand (sur sol)", BF.nahawand, "نهاوند (على صول)"]] } },
     bastanikar:      { name: "Boustanikar",      jins: [[BF.sikah, 0], [BF.saba, 7], [BF.rast, 17]] },
     jaharkah:        { name: "Jaharkah",         jins: [[BF.rast, 0], [BF.ajam, 10], [BF.rast, 24]] },
     ajam_ushayran:   { name: "Ajam Ouchairan",   jins: [[BF.ajam, 0], [BF.kurd, 8], [BF.nahawand, 18]] },
@@ -501,11 +501,14 @@
   function updateAltSel(maqamSel, altSel, wrap) {
     const m = MAQAM[maqamSel.value];
     if (m && m.alt) {
+      const cur = altSel.value;
       altSel.innerHTML = "";
-      m.alt.options.forEach(([label], i) => {
+      m.alt.options.forEach(([label, , labelAr], i) => {
         const o = document.createElement("option");
-        o.value = i; o.textContent = label; altSel.appendChild(o);
+        o.value = i; o.textContent = (LANG === "ar" && labelAr) ? labelAr : label;
+        altSel.appendChild(o);
       });
+      if (cur) altSel.value = cur; // conserve la sélection (ex. au changement de langue)
       wrap.classList.remove("hidden");
     } else {
       wrap.classList.add("hidden");
@@ -1008,6 +1011,8 @@
     // re-remplir jins/maqam (libellé « aucun » traduit) en conservant la sélection
     [[jinsLibre, fillJinsSel], [maqamLibre, fillMaqamSel], [jinsDictee, fillJinsSel], [maqamDictee, fillMaqamSel]]
       .forEach(([s, fn]) => { const v = s.value; fn(s); s.value = v; });
+    updateAltSel(maqamLibre, altLibre, altLibreWrap);   // libellés des variantes traduits
+    updateAltSel(maqamDictee, altDictee, altDicteeWrap);
     renderJinsLibre();
     if (!game.classList.contains("hidden")) scoreEl.textContent = t("score") + " : " + good + " / " + tot;
   }
