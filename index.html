@@ -136,7 +136,8 @@
   <div class="panel" style="max-width:760px;">
     <h2>🎼 Jins / Maqam</h2>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <label style="font-size:.9rem;">Gamme <select id="jins-libre"></select></label>
+      <label style="font-size:.9rem;">Jins <select id="jins-libre"></select></label>
+      <label style="font-size:.9rem;">Maqam <select id="maqam-libre"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-libre"></select></label>
     </div>
     <div class="grid" id="jins-notes" style="margin-top:16px;"></div>
@@ -150,7 +151,8 @@
     <h2>🎧 Dictée musicale — configuration</h2>
     <h3>Jins / Maqam (optionnel)</h3>
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-      <label style="font-size:.9rem;">Gamme <select id="jins-dictee"></select></label>
+      <label style="font-size:.9rem;">Jins <select id="jins-dictee"></select></label>
+      <label style="font-size:.9rem;">Maqam <select id="maqam-dictee"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-dictee"></select></label>
     </div>
     <p style="opacity:.7;font-size:.85rem;margin:8px 0 0;">Si une gamme (jins ou maqam) est choisie, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
@@ -262,6 +264,14 @@
     ajam_ushayran:   { name: "Ajam Ouchairan",   jins: [[BF.ajam, 0], [BF.kurd, 8], [BF.nahawand, 18]] },
     lami:            { name: "Lami",             jins: [[BF.kurd, 0], [BF.kurd, 10]] }
   };
+  // Tonique d'origine de chaque maqam, en index de note (Do=10, Ré=14, Mi½♭=17,
+  // Si½♭=7, Si♭=6, Mi=18) — sélection auto de la tonale, transposition possible ensuite.
+  const MAQAM_TONIC = {
+    rast_asli: 10, rast_nayrouz: 10, rast_souznak: 10, rast_dalanshin: 10,
+    nahawand: 10, nikriz: 10, nawa_athar: 10, hijazkar: 10, zanjaran: 10, hijazkar_kurd: 10,
+    bayati_asli: 14, bayati_muhayyar: 14, bayati_shuri: 14, hijaz: 14, shahnaz: 14, kurd: 14, saba: 14,
+    huzam: 17, rahat_arwah: 7, iraq: 7, bastanikar: 7, jaharkah: 10, ajam_ushayran: 6, lami: 18
+  };
   function maqamDegrees(key, tonic) {
     const set = new Set();
     MAQAM[key].jins.forEach(([steps, off]) => {
@@ -286,23 +296,16 @@
       sel.appendChild(o);
     }
   }
-  function fillJins(sel, noneLabel) {
+  function fillOptions(sel, noneLabel, obj) {
     sel.innerHTML = '<option value="">' + noneLabel + '</option>';
-    const gj = document.createElement("optgroup"); gj.label = "Ajnas";
-    for (const key in JINS) {
+    for (const key in obj) {
       const o = document.createElement("option");
-      o.value = "jins:" + key; o.textContent = JINS[key].name;
-      gj.appendChild(o);
+      o.value = key; o.textContent = obj[key].name;
+      sel.appendChild(o);
     }
-    sel.appendChild(gj);
-    const gm = document.createElement("optgroup"); gm.label = "Maqamat";
-    for (const key in MAQAM) {
-      const o = document.createElement("option");
-      o.value = "maqam:" + key; o.textContent = MAQAM[key].name;
-      gm.appendChild(o);
-    }
-    sel.appendChild(gm);
   }
+  const fillJinsSel = (sel) => fillOptions(sel, "— Aucun —", JINS);
+  const fillMaqamSel = (sel) => fillOptions(sel, "— Aucun —", MAQAM);
 
   const app = document.getElementById("app");
   const status = document.getElementById("status");
@@ -585,13 +588,23 @@
 
   // ---- Jins en écoute libre ----
   const jinsLibre = document.getElementById("jins-libre");
+  const maqamLibre = document.getElementById("maqam-libre");
   const tonicLibre = document.getElementById("tonic-libre");
   const jinsNotes = document.getElementById("jins-notes");
-  fillJins(jinsLibre, "— Aucun (chromatique complet) —");
+  fillJinsSel(jinsLibre);
+  fillMaqamSel(maqamLibre);
   fillTonic(tonicLibre);
+
+  // Gamme active (jins ou maqam) sous forme "jins:x" / "maqam:x"
+  function activeScale(jinsSel, maqamSel) {
+    if (maqamSel.value) return "maqam:" + maqamSel.value;
+    if (jinsSel.value) return "jins:" + jinsSel.value;
+    return "";
+  }
+
   function renderJinsLibre() {
     jinsNotes.innerHTML = "";
-    const val = jinsLibre.value;
+    const val = activeScale(jinsLibre, maqamLibre);
     chromatic.classList.toggle("hidden", !!val); // masque le chromatique si une gamme est choisie
     if (!val) return;
     scaleDegrees(val, +tonicLibre.value).forEach((d, idx) => {
@@ -602,7 +615,11 @@
       jinsNotes.appendChild(btn);
     });
   }
-  jinsLibre.addEventListener("change", renderJinsLibre);
+  jinsLibre.addEventListener("change", () => { if (jinsLibre.value) maqamLibre.value = ""; renderJinsLibre(); });
+  maqamLibre.addEventListener("change", () => {
+    if (maqamLibre.value) { jinsLibre.value = ""; tonicLibre.value = MAQAM_TONIC[maqamLibre.value]; } // tonale d'origine
+    renderJinsLibre();
+  });
   tonicLibre.addEventListener("change", renderJinsLibre);
 
   // ================= MODE DICTÉE =================
@@ -695,14 +712,20 @@
   }
 
   const jinsDictee = document.getElementById("jins-dictee");
+  const maqamDictee = document.getElementById("maqam-dictee");
   const tonicDictee = document.getElementById("tonic-dictee");
-  fillJins(jinsDictee, "— Aucun —");
+  fillJinsSel(jinsDictee);
+  fillMaqamSel(maqamDictee);
   fillTonic(tonicDictee);
+  jinsDictee.addEventListener("change", () => { if (jinsDictee.value) maqamDictee.value = ""; });
+  maqamDictee.addEventListener("change", () => {
+    if (maqamDictee.value) { jinsDictee.value = ""; tonicDictee.value = MAQAM_TONIC[maqamDictee.value]; }
+  });
 
   document.getElementById("start-dictee").addEventListener("click", () => {
-    const jkey = jinsDictee.value;
-    pool = jkey ? scaleDegrees(jkey, +tonicDictee.value) : buildPool();
-    if (pool.length < 2) { cfgMsg.textContent = jkey ? "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
+    const val = activeScale(jinsDictee, maqamDictee);
+    pool = val ? scaleDegrees(val, +tonicDictee.value) : buildPool();
+    if (pool.length < 2) { cfgMsg.textContent = val ? "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
     cfgMsg.textContent = "";
     good = 0; tot = 0;
     scoreEl.textContent = "Score : 0 / 0";
