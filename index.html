@@ -42,7 +42,7 @@
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   header p { color: var(--muted); margin: 4px 0; font-size: .95rem; }
-  .brand-mark { display: inline-block; height: 1.02em; margin-right: .2em; vertical-align: -0.16em; }
+  .brand-mark { display: inline-block; height: 1.53em; margin-right: .22em; vertical-align: -0.3em; }
   .brand-mark svg { height: 100%; width: auto; }
   .brand-mark path { fill: var(--gold); }
   .brand-mark line { stroke: var(--gold); }
@@ -85,6 +85,8 @@
     background-repeat: no-repeat; background-position: right 12px center;
     transition: border-color .15s, box-shadow .15s;
   }
+  #oud-gain { width: 170px; accent-color: var(--gold); cursor: pointer; vertical-align: middle; }
+  #oud-gain-val { color: var(--gold); }
   select:hover { border-color: rgba(255,206,92,.5); }
   select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255,206,92,.2); }
   optgroup { color: var(--gold); background: #1d1436; }
@@ -190,7 +192,10 @@
       <option value="piano">Piano (synthétique)</option>
     </select>
   </div>
-  <button id="stop" class="chip">⏹ Stop</button>
+  <div class="field hidden" id="oud-gain-wrap">
+    <span>🔊 Gain oud · <b id="oud-gain-val">300 %</b></span>
+    <input id="oud-gain" type="range" min="100" max="800" step="10" value="300">
+  </div>
 </div>
 <p id="status"></p>
 
@@ -404,7 +409,7 @@
   const TRIM_END = 0;
 
   // ---- Moteur audio : Web Audio API avec préchargement en mémoire ----
-  let ctx = null, gainNode = null, oudComp = null;
+  let ctx = null, gainNode = null, oudComp = null, oudGain = null;
   const buffers = new Array(TOTAL);   // AudioBuffer décodés
   const loading = new Array(TOTAL);   // promesses de chargement
 
@@ -414,11 +419,13 @@
     gainNode = ctx.createGain();
     gainNode.gain.value = 1; // volume maître à 100 %
     gainNode.connect(ctx.destination); // son naturel : source -> gain -> sortie
-    // Limiteur sur la voie de l'oud : le sustain relevé ne sature pas
+    // Voie dédiée à l'oud : gain réglable (curseur) -> limiteur -> sortie
+    oudGain = ctx.createGain();
+    oudGain.gain.value = parseFloat(oudGainSlider.value) / 100;
     oudComp = ctx.createDynamicsCompressor();
     oudComp.threshold.value = -1; oudComp.knee.value = 0; oudComp.ratio.value = 20;
     oudComp.attack.value = 0.003; oudComp.release.value = 0.12;
-    oudComp.connect(gainNode);
+    oudGain.connect(oudComp).connect(gainNode);
   }
 
   function loadBuffer(i) {
@@ -554,8 +561,8 @@
   }
 
   // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
-  // dest : nœud de sortie ; oudShape : garde la frappe à niveau naturel et relève le reste
-  function bufferVoice(buf, rate, dest, oudShape) {
+  // dest : nœud de sortie (par défaut le gain maître ; la voie oud pour l'oud)
+  function bufferVoice(buf, rate, dest) {
     const s = ctx.createBufferSource();
     s.buffer = buf;
     if (rate) s.playbackRate.value = rate;
@@ -563,11 +570,6 @@
     const now = ctx.currentTime;
     env.gain.setValueAtTime(0.0001, now);
     env.gain.linearRampToValueAtTime(1, now + 0.006); // fondu d'entrée
-    if (oudShape) {
-      const ATT = 0.13;        // durée de la frappe gardée à niveau naturel
-      env.gain.setValueAtTime(1, now + ATT);
-      env.gain.linearRampToValueAtTime(3, now + ATT + 0.18); // reste plus fort (limité par oudComp)
-    }
     s.connect(env).connect(dest || gainNode);
     s.start(0);
     return { env, nodes: [s] };
@@ -577,7 +579,7 @@
   function spawn(i) {
     // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
-    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, oudComp, true); // frappe naturelle, reste relevé
+    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, oudGain); // gain réglable via le curseur
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
@@ -664,10 +666,18 @@
     return sec;
   }
 
-  document.getElementById("stop").addEventListener("click", () => { stop(); status.textContent = ""; });
+  // Curseur de gain propre à l'oud transposé (affiché seulement pour l'oud)
+  const oudGainSlider = document.getElementById("oud-gain");
+  const oudGainVal = document.getElementById("oud-gain-val");
+  const oudGainWrap = document.getElementById("oud-gain-wrap");
+  oudGainSlider.addEventListener("input", () => {
+    oudGainVal.textContent = oudGainSlider.value + " %";
+    if (oudGain) oudGain.gain.value = parseFloat(oudGainSlider.value) / 100;
+  });
 
   document.getElementById("source").addEventListener("change", e => {
-    SOURCE = e.target.value; // "rec" ou "synth"
+    SOURCE = e.target.value;
+    oudGainWrap.classList.toggle("hidden", SOURCE !== "voix2"); // barre de gain seulement pour l'oud
     stop();
   });
 
