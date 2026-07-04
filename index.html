@@ -352,6 +352,10 @@
   const octSuffix = i => (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
   const noteName = i => NAMES[i % 24] + octSuffix(i);
 
+  // Affichage du nom de note selon la langue (interne = français, ex. "Do ♯")
+  const NOTE_AR = { "Do": "دو", "Ré": "ري", "Mi": "مي", "Fa": "فا", "Sol": "صول", "La": "لا", "Si": "سي" };
+  const dispName = name => (LANG === "ar") ? name.replace(/^(Do|Ré|Mi|Fa|Sol|La|Si)/, m => NOTE_AR[m]) : name;
+
   // Enharmonies (bémol de la note suivante) pour éviter deux notes de même lettre
   const ENHARM = { 2: "Sol ♯", 6: "La ♯", 12: "Ré ♭", 16: "Ré ♯", 22: "Sol ♭" };
   const rootKey = nm => {
@@ -481,7 +485,7 @@
     sel.innerHTML = "";
     for (let i = 0; i < TOTAL; i++) {
       const o = document.createElement("option");
-      o.value = i; o.textContent = (i + 1) + " — " + noteName(i);
+      o.value = i; o.textContent = (i + 1) + " — " + dispName(noteName(i));
       sel.appendChild(o);
     }
   }
@@ -843,7 +847,7 @@
     degs.forEach((d, idx) => {
       const btn = document.createElement("button");
       btn.className = "note";
-      btn.innerHTML = spelled[d] + '<span class="idx">' + t("degre") + ' ' + (idx + 1) + '</span>';
+      btn.innerHTML = dispName(spelled[d]) + '<span class="idx">' + t("degre") + ' ' + (idx + 1) + '</span>';
       btn.addEventListener("pointerdown", (e) => { e.preventDefault(); play(d, btn); });
       jinsNotes.appendChild(btn);
     });
@@ -898,7 +902,7 @@
     pool.forEach(i => {
       const btn = document.createElement("button");
       btn.className = "note";
-      btn.innerHTML = poolNames[i] || noteName(i);
+      btn.innerHTML = dispName(poolNames[i] || noteName(i));
       btn.addEventListener("click", () => guess(i, btn));
       guesses.appendChild(btn);
     });
@@ -916,7 +920,7 @@
   function guess(i, btn) {
     if (nextBtn.classList.contains("hidden") === false) return; // déjà répondu
     tot++;
-    const ansName = poolNames[answer] || noteName(answer);
+    const ansName = dispName(poolNames[answer] || noteName(answer));
     if (i === answer) {
       good++;
       btn.classList.add("correct");
@@ -1011,6 +1015,7 @@
     // re-remplir jins/maqam (libellé « aucun » traduit) en conservant la sélection
     [[jinsLibre, fillJinsSel], [maqamLibre, fillMaqamSel], [jinsDictee, fillJinsSel], [maqamDictee, fillMaqamSel]]
       .forEach(([s, fn]) => { const v = s.value; fn(s); s.value = v; });
+    [tonicLibre, tonicDictee].forEach(s => { const v = s.value; fillTonic(s); s.value = v; }); // noms de notes traduits
     updateAltSel(maqamLibre, altLibre, altLibreWrap);   // libellés des variantes traduits
     updateAltSel(maqamDictee, altDictee, altDicteeWrap);
     renderJinsLibre();
