@@ -121,10 +121,6 @@
       <option value="piano">Piano (synthétique)</option>
     </select>
   </label>
-  <label style="font-size:.9rem;opacity:.85;">🔊 Gain
-    <input id="vol" type="range" min="100" max="800" step="10" value="100" style="vertical-align:middle;width:160px;">
-    <span id="volval">100 %</span>
-  </label>
 </div>
 <p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
 
@@ -355,7 +351,7 @@
     if (ctx) return;
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     gainNode = ctx.createGain();
-    gainNode.gain.value = parseFloat(vol.value) / 100;
+    gainNode.gain.value = 1; // volume maître à 100 %
     gainNode.connect(ctx.destination); // son naturel : source -> gain -> sortie
   }
 
@@ -506,7 +502,7 @@
   }
 
   // Niveau propre à chaque source pour équilibrer le volume perçu
-  const OUD_LEVEL = 1.9; // « Oud transposé » (PSOLA) remonté au niveau du violon
+  const OUD_LEVEL = 4.0; // « Oud transposé » (PSOLA) à 400 %
 
   // Crée et démarre une « voix » pour la note i. Renvoie une poignée { env, nodes }
   function spawn(i) {
@@ -600,13 +596,6 @@
   }
 
   document.getElementById("stop").addEventListener("click", () => { stop(); status.textContent = ""; });
-
-  const vol = document.getElementById("vol");
-  const volval = document.getElementById("volval");
-  vol.addEventListener("input", () => {
-    volval.textContent = vol.value + " %";
-    if (gainNode) gainNode.gain.value = parseFloat(vol.value) / 100;
-  });
 
   document.getElementById("source").addEventListener("change", e => {
     SOURCE = e.target.value; // "rec" ou "synth"
