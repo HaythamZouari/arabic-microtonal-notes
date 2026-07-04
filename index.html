@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,6 +61,16 @@
   .tab:hover { color: var(--text); }
   .tab.active { color: #241640; background: linear-gradient(150deg, #ffe6a6, var(--gold));
     box-shadow: 0 3px 12px rgba(255,206,92,.35); }
+
+  /* Sélecteur de langue */
+  .langbar { display: flex; gap: 6px; justify-content: flex-end; margin-bottom: 4px; }
+  .langbtn { cursor: pointer; border: 1px solid var(--panel-brd); background: var(--chip);
+    color: var(--muted); border-radius: 8px; padding: 5px 12px; font-size: .82rem; font-weight: 600;
+    transition: color .15s, background .15s; }
+  .langbtn:hover { color: var(--text); }
+  .langbtn.active { color: #241640; background: var(--gold); border-color: transparent; }
+  html[dir="rtl"] .langbar { justify-content: flex-start; }
+  html[dir="rtl"] .brand-mark { margin-right: 0; margin-left: .22em; }
 
   /* Barre d'outils */
   .toolbar { display: flex; gap: 12px; justify-content: center; align-items: flex-end;
@@ -168,32 +178,37 @@
 </head>
 <body>
 <div class="wrap">
+<div class="langbar">
+  <button class="langbtn" data-lang="fr">FR</button>
+  <button class="langbtn" data-lang="en">EN</button>
+  <button class="langbtn" data-lang="ar">العربية</button>
+</div>
 <header>
-  <h1><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+  <h1 dir="ltr"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
     <path d="M7 2.5 h2.9 v27.5 h-2.9 z"/>
     <path d="M9.9 14.5 C 20 12, 23 20, 15.5 24 C 12.7 25.5, 10.9 27.2, 9.9 30 Z"/>
     <line x1="2.5" y1="13" x2="14" y2="6" stroke-width="2.4" stroke-linecap="round"/>
   </svg></span>Maqām Lab</h1>
-  <p>Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins &amp; dictée</p>
+  <p data-i18n="subtitle">Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins &amp; dictée</p>
   <div class="rule"></div>
 </header>
 
 <div class="tabs">
-  <button class="tab active" id="tab-libre">🎹 Écoute libre</button>
-  <button class="tab" id="tab-dictee">🎧 Dictée</button>
+  <button class="tab active" id="tab-libre" data-i18n="tab_libre">🎹 Écoute libre</button>
+  <button class="tab" id="tab-dictee" data-i18n="tab_dictee">🎧 Dictée</button>
 </div>
 
 <div class="toolbar">
   <div class="field">
-    <span>🎛 Instrument</span>
+    <span data-i18n="lbl_instrument">🎛 Instrument</span>
     <select id="source">
-      <option value="voix2">Oud transposé</option>
-      <option value="violin" selected>Violon (synthétique)</option>
-      <option value="piano">Piano (synthétique)</option>
+      <option value="voix2" data-i18n="src_oud">Oud transposé</option>
+      <option value="violin" selected data-i18n="src_violin">Violon (synthétique)</option>
+      <option value="piano" data-i18n="src_piano">Piano (synthétique)</option>
     </select>
   </div>
   <div class="field hidden" id="oud-gain-wrap">
-    <span>🔊 Gain oud · <b id="oud-gain-val">300 %</b></span>
+    <span><span data-i18n="gain_oud">🔊 Gain oud</span> · <b id="oud-gain-val">300 %</b></span>
     <input id="oud-gain" type="range" min="100" max="800" step="10" value="300">
   </div>
 </div>
@@ -201,16 +216,16 @@
 
 <main id="app">
   <div class="panel">
-    <h2>🎼 Jins &amp; Maqam</h2>
+    <h2 data-i18n="h_jinsmaqam">🎼 Jins &amp; Maqam</h2>
     <div class="fields">
-      <div class="field"><span>Jins</span><select id="jins-libre"></select></div>
-      <div class="field"><span>Maqam</span><select id="maqam-libre"></select></div>
-      <div class="field hidden" id="alt-libre-wrap"><span>Variante</span><select id="alt-libre"></select></div>
-      <div class="field"><span>Tonale</span><select id="tonic-libre"></select></div>
+      <div class="field"><span data-i18n="lbl_jins">Jins</span><select id="jins-libre"></select></div>
+      <div class="field"><span data-i18n="lbl_maqam">Maqam</span><select id="maqam-libre"></select></div>
+      <div class="field hidden" id="alt-libre-wrap"><span data-i18n="lbl_variante">Variante</span><select id="alt-libre"></select></div>
+      <div class="field"><span data-i18n="lbl_tonale">Tonale</span><select id="tonic-libre"></select></div>
     </div>
     <div class="grid" id="jins-notes" style="margin-top:18px;"></div>
     <div class="actions">
-      <button class="btn hidden" id="to-dictee">🎧 Passer à la dictée sur cette gamme</button>
+      <button class="btn hidden" id="to-dictee" data-i18n="btn_to_dictee">🎧 Passer à la dictée sur cette gamme</button>
     </div>
   </div>
   <div id="chromatic"></div>
@@ -219,34 +234,34 @@
 <section id="dictee" class="hidden">
   <!-- Configuration -->
   <div class="panel" id="dictee-config">
-    <h2>🎧 Dictée musicale</h2>
-    <h3>Jins / Maqam (optionnel)</h3>
+    <h2 data-i18n="h_dictee">🎧 Dictée musicale</h2>
+    <h3 data-i18n="h_jinsmaqam_opt">Jins / Maqam (optionnel)</h3>
     <div class="fields">
-      <div class="field"><span>Jins</span><select id="jins-dictee"></select></div>
-      <div class="field"><span>Maqam</span><select id="maqam-dictee"></select></div>
-      <div class="field hidden" id="alt-dictee-wrap"><span>Variante</span><select id="alt-dictee"></select></div>
-      <div class="field"><span>Tonale</span><select id="tonic-dictee"></select></div>
+      <div class="field"><span data-i18n="lbl_jins">Jins</span><select id="jins-dictee"></select></div>
+      <div class="field"><span data-i18n="lbl_maqam">Maqam</span><select id="maqam-dictee"></select></div>
+      <div class="field hidden" id="alt-dictee-wrap"><span data-i18n="lbl_variante">Variante</span><select id="alt-dictee"></select></div>
+      <div class="field"><span data-i18n="lbl_tonale">Tonale</span><select id="tonic-dictee"></select></div>
     </div>
-    <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0;">La dictée porte sur les notes du jins ou du maqam choisi.</p>
+    <p data-i18n="help_dictee" style="color:var(--muted);font-size:.85rem;margin:10px 0 0;">La dictée porte sur les notes du jins ou du maqam choisi.</p>
     <p id="cfg-msg" style="color:var(--bad);min-height:1.2em;margin:12px 0 0;font-size:.9rem;"></p>
     <div class="actions">
-      <button class="btn" id="start-dictee">▶ Commencer la dictée</button>
+      <button class="btn" id="start-dictee" data-i18n="btn_start">▶ Commencer la dictée</button>
     </div>
   </div>
 
   <!-- Jeu -->
   <div class="panel hidden" id="dictee-game">
-    <div class="score" id="score">Score : 0 / 0</div>
+    <div class="score" id="score"></div>
     <div style="text-align:center;margin-bottom:6px;">
-      <button class="btn" id="replay">🔊 Réécouter la note</button>
+      <button class="btn" id="replay" data-i18n="btn_replay">🔊 Réécouter la note</button>
     </div>
-    <p class="ask">Quelle note as-tu entendue ?</p>
+    <p class="ask" data-i18n="ask">Quelle note as-tu entendue ?</p>
     <div class="grid" id="guesses"></div>
     <div class="feedback" id="feedback"></div>
     <div class="actions">
-      <button class="btn hidden" id="next-q">Note suivante ▶</button>
-      <button class="btn ghost" id="to-libre">🎹 Écoute libre sur cette gamme</button>
-      <button class="btn ghost" id="back-config">⚙ Changer les réglages</button>
+      <button class="btn hidden" id="next-q" data-i18n="btn_next">Note suivante ▶</button>
+      <button class="btn ghost" id="to-libre" data-i18n="btn_to_libre">🎹 Écoute libre sur cette gamme</button>
+      <button class="btn ghost" id="back-config" data-i18n="btn_back_config">⚙ Changer les réglages</button>
     </div>
   </div>
 </section>
@@ -262,6 +277,69 @@
     "Mi", "Mi ½♯", "Fa", "Fa ½♯", "Fa ♯", "Sol ½♭"
   ];
 
+  // ---- Internationalisation (FR / EN / AR) ----
+  let LANG = "ar";
+  const I18N = {
+    fr: {
+      subtitle: "Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins & dictée",
+      tab_libre: "🎹 Écoute libre", tab_dictee: "🎧 Dictée",
+      lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Gain oud",
+      src_oud: "Oud transposé", src_violin: "Violon (synthétique)", src_piano: "Piano (synthétique)",
+      h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variante", lbl_tonale: "Tonale",
+      btn_to_dictee: "🎧 Passer à la dictée sur cette gamme",
+      h_dictee: "🎧 Dictée musicale", h_jinsmaqam_opt: "Jins / Maqam (optionnel)",
+      help_dictee: "La dictée porte sur les notes du jins ou du maqam choisi.",
+      btn_start: "▶ Commencer la dictée", btn_replay: "🔊 Réécouter la note",
+      ask: "Quelle note as-tu entendue ?", btn_next: "Note suivante ▶",
+      btn_to_libre: "🎹 Écoute libre sur cette gamme", btn_back_config: "⚙ Changer les réglages",
+      none: "— Aucun —", degre: "degré", score: "Score", correct: "✓ Correct ! C'était", wrong: "✗ Raté. C'était",
+      pick_scale: "Choisis un jins ou un maqam pour lancer la dictée.",
+      out_of_range: "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave.",
+      loading: "⏳ Chargement…", unavailable: "⚠ Note indisponible", read_error: "⚠ Lecture impossible",
+      note_n: "▶ Note n°", prefetch: "⏳ Préchargement",
+      oct1: "1ʳᵉ octave — Sol → Sol (notes 1 à 24)", oct2: "2ᵉ octave — Sol → Sol (notes 25 à 48)", octlast: "Sol aigu final (note 49)"
+    },
+    en: {
+      subtitle: "Listening lab for Arabic maqāmāt — quarter tones, jins & dictation",
+      tab_libre: "🎹 Free play", tab_dictee: "🎧 Dictation",
+      lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Oud gain",
+      src_oud: "Transposed oud", src_violin: "Violin (synth)", src_piano: "Piano (synth)",
+      h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variant", lbl_tonale: "Tonic",
+      btn_to_dictee: "🎧 Go to dictation on this scale",
+      h_dictee: "🎧 Musical dictation", h_jinsmaqam_opt: "Jins / Maqam (optional)",
+      help_dictee: "The dictation uses the notes of the selected jins or maqam.",
+      btn_start: "▶ Start dictation", btn_replay: "🔊 Replay the note",
+      ask: "Which note did you hear?", btn_next: "Next note ▶",
+      btn_to_libre: "🎹 Free play on this scale", btn_back_config: "⚙ Change settings",
+      none: "— None —", degre: "degree", score: "Score", correct: "✓ Correct! It was", wrong: "✗ Wrong. It was",
+      pick_scale: "Pick a jins or a maqam to start the dictation.",
+      out_of_range: "The scale doesn't fit the range at this tonic — choose a lower tonic.",
+      loading: "⏳ Loading…", unavailable: "⚠ Note unavailable", read_error: "⚠ Playback failed",
+      note_n: "▶ Note #", prefetch: "⏳ Preloading",
+      oct1: "1st octave — Sol → Sol (notes 1–24)", oct2: "2nd octave — Sol → Sol (notes 25–48)", octlast: "Final high Sol (note 49)"
+    },
+    ar: {
+      subtitle: "مختبر سماع المقامات العربية — الأجناس والإملاء المقامي",
+      tab_libre: "🎹 استماع حر", tab_dictee: "🎧 إملاء",
+      lbl_instrument: "🎛 الآلة", gain_oud: "🔊 مستوى العود",
+      src_oud: "عود", src_violin: "كمان", src_piano: "بيانو",
+      h_jinsmaqam: "🎼 الجنس / المقام", lbl_jins: "جنس", lbl_maqam: "مقام", lbl_variante: "إمكانيات", lbl_tonale: "إرتكاز",
+      btn_to_dictee: "🎧 الانتقال إلى الإملاء على هذا المقام",
+      h_dictee: "🎧 الإملاء الموسيقي", h_jinsmaqam_opt: "الجنس / المقام (اختياري)",
+      help_dictee: "يعتمد الإملاء على نغمات الجنس أو المقام المختار.",
+      btn_start: "▶ ابدأ الإملاء", btn_replay: "🔊 إعادة سماع النغمة",
+      ask: "ما النغمة التي سمعتها؟", btn_next: "النغمة التالية ▶",
+      btn_to_libre: "🎹 استماع حر على هذا المقام", btn_back_config: "⚙ تغيير الإعدادات",
+      none: "— لا شيء —", degre: "الدرجة", score: "النتيجة", correct: "✓ صحيح! كانت", wrong: "✗ خطأ. كانت",
+      pick_scale: "اختر جنساً أو مقاماً لبدء الإملاء.",
+      out_of_range: "لا تتّسع الجملة في المدى عند هذا الأساس — اختر أساساً أخفض.",
+      loading: "⏳ جارٍ التحميل…", unavailable: "⚠ النغمة غير متوفرة", read_error: "⚠ تعذّر التشغيل",
+      note_n: "▶ نغمة رقم ", prefetch: "⏳ التحميل المسبق",
+      oct1: "الأوكتاف الأول — صول ← صول (النغمات 1–24)", oct2: "الأوكتاف الثاني — صول ← صول (النغمات 25–48)", octlast: "صول العليا الأخيرة (النغمة 49)"
+    }
+  };
+  const t = (k) => (I18N[LANG] && I18N[LANG][k]) || I18N.fr[k] || k;
+
   const TOTAL = 49; // 0..48 (sol -> sol -> sol)
   const FOLDER = "notes"; // versions allégées (rognées, mono, 22 kHz)
 
@@ -271,7 +349,38 @@
   }
 
   // Nom affiché d'une note (avec marqueur d'octave)
-  const noteName = i => NAMES[i % 24] + (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
+  const octSuffix = i => (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
+  const noteName = i => NAMES[i % 24] + octSuffix(i);
+
+  // Affichage du nom de note selon la langue (interne = français, ex. "Do ♯")
+  const NOTE_AR = { "Do": "دو", "Ré": "ري", "Mi": "مي", "Fa": "فا", "Sol": "صول", "La": "لا", "Si": "سي" };
+  const dispName = name => (LANG === "ar") ? name.replace(/^(Do|Ré|Mi|Fa|Sol|La|Si)/, m => NOTE_AR[m]) : name;
+
+  // Enharmonies (bémol de la note suivante) pour éviter deux notes de même lettre
+  const ENHARM = { 2: "Sol ♯", 6: "La ♯", 12: "Ré ♭", 16: "Ré ♯", 22: "Sol ♭" };
+  const rootKey = nm => {
+    const r = nm.match(/^(Do|Ré|Mi|Fa|Sol|La|Si)/);
+    const oct = (nm.match(/'+$/) || [""])[0];
+    return (r ? r[1] : nm) + oct;
+  };
+  const isNatural = i => !/[♭♯½]/.test(NAMES[i % 24]);
+
+  // Renomme les notes d'une gamme pour qu'aucune lettre n'apparaisse deux fois
+  // (ex. Do + Do♯ → Do + Ré♭). Renvoie { index: nom }.
+  function spellScale(indices) {
+    const names = {}, used = new Set();
+    const sorted = [...indices].sort((a, b) => a - b);
+    sorted.forEach(i => { if (isNatural(i)) { const nm = noteName(i); names[i] = nm; used.add(rootKey(nm)); } });
+    sorted.forEach(i => {
+      if (isNatural(i)) return;
+      const prim = noteName(i);
+      if (!used.has(rootKey(prim))) { names[i] = prim; used.add(rootKey(prim)); return; }
+      const alt = ENHARM[i % 24];
+      if (alt) { const an = alt + octSuffix(i); if (!used.has(rootKey(an))) { names[i] = an; used.add(rootKey(an)); return; } }
+      names[i] = prim; used.add(rootKey(prim));
+    });
+    return names;
+  }
 
   // Ajnas (gammes) : intervalles en tons -> pas d'index (1 ton = 4 quarts de ton = 4 pas)
   const JINS = {
@@ -307,25 +416,25 @@
     rast_souznak:    { name: "Rast Souznak",     jins: [[BF.rast, 0], [BF.hijaz, 14]] },
     rast_dalanshin:  { name: "Rast Dalanshin",   jins: [[BF.rast, 0], [BF.saba, 18]] },
     nahawand:        { name: "Nahawand",         jins: [[BF.nahawand, 0], [BF.hijaz, 14]],
-                       alt: { index: 1, options: [["Hijaz (sur sol)", BF.hijaz], ["Kurd (sur sol)", BF.kurd]] } },
+                       alt: { index: 1, options: [["Hijaz (sur sol)", BF.hijaz, "حجاز (على صول)"], ["Kurd (sur sol)", BF.kurd, "كرد (على صول)"]] } },
     nikriz:          { name: "Nikriz",           jins: [[BF.nikriz, 0], [BF.nahawand, 14]] },
     nawa_athar:      { name: "Nawa Athar",       jins: [[BF.nikriz, 0], [BF.hijaz, 14]] },
     hijazkar:        { name: "Hijazkar",         jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.hijaz, 24]] },
-    zanjaran:        { name: "Zanjaran (Zankoulah)", jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
+    zanjaran:        { name: "Zankoulah",       jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
     hijazkar_kurd:   { name: "Hijazkar Kurd",    jins: [[BF.kurd, 0], [BF.nahawand, 10], [BF.kurd, 24]] },
     bayati_asli:     { name: "Bayati asli",      jins: [[BF.bayati, 0], [BF.rast, 10]],
-                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast, "رست (على صول)"], ["Nahawand (sur sol)", BF.nahawand, "نهاوند (على صول)"]] } },
     bayati_muhayyar: { name: "Bayati Mouhayyar", jins: [[BF.bayati, 0], [BF.rast, 10], [BF.bayati, 24]] },
     bayati_shuri:    { name: "Bayati Chouri",    jins: [[BF.bayati, 0], [BF.hijaz, 10], [BF.bayati, 24]] },
     hijaz:           { name: "Hijaz",            jins: [[BF.hijaz, 0], [BF.rast, 10], [BF.hijaz, 24]],
-                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast, "رست (على صول)"], ["Nahawand (sur sol)", BF.nahawand, "نهاوند (على صول)"]] } },
     shahnaz:         { name: "Chahnaz",          jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.nahawand, 24]] },
     kurd:            { name: "Kurd",             jins: [[BF.kurd, 0], [BF.nahawand, 10]] },
     saba:            { name: "Saba",             jins: [[BF.saba, 0], [BF.hijaz, 6], [BF.hijaz, 20]] },
     huzam:           { name: "Sika Houzam",      jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
     rahat_arwah:     { name: "Rahat al-Arwah",   jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
     iraq:            { name: "Araq (Iraq)",      jins: [[BF.sikah, 0], [BF.bayati, 7], [BF.rast, 17]],
-                       alt: { index: 2, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+                       alt: { index: 2, options: [["Rast (sur sol)", BF.rast, "رست (على صول)"], ["Nahawand (sur sol)", BF.nahawand, "نهاوند (على صول)"]] } },
     bastanikar:      { name: "Boustanikar",      jins: [[BF.sikah, 0], [BF.saba, 7], [BF.rast, 17]] },
     jaharkah:        { name: "Jaharkah",         jins: [[BF.rast, 0], [BF.ajam, 10], [BF.rast, 24]] },
     ajam_ushayran:   { name: "Ajam Ouchairan",   jins: [[BF.ajam, 0], [BF.kurd, 8], [BF.nahawand, 18]] },
@@ -338,6 +447,20 @@
     nahawand: 10, nikriz: 10, nawa_athar: 10, hijazkar: 10, zanjaran: 10, hijazkar_kurd: 10,
     bayati_asli: 14, bayati_muhayyar: 14, bayati_shuri: 14, hijaz: 14, shahnaz: 14, kurd: 14, saba: 14,
     huzam: 17, rahat_arwah: 7, iraq: 7, bastanikar: 7, jaharkah: 10, ajam_ushayran: 6, lami: 18
+  };
+  // Noms en lettres arabes (affichés quand la langue est l'arabe)
+  const JINS_AR = {
+    ajam: "عجم", nahawand: "نهاوند", kurd: "كرد", hijaz: "حجاز", bayati: "بياتي",
+    rast: "رست", saba: "صبا", sikah: "سيكاه", nikriz: "نكريز"
+  };
+  const MAQAM_AR = {
+    rast_asli: "رست أصلي", rast_nayrouz: "رست نيروز", rast_souznak: "رست سوزناك", rast_dalanshin: "رست دلنشين",
+    nahawand: "نهاوند", nikriz: "نكريز", nawa_athar: "نوى أثر", hijazkar: "حجازكار",
+    zanjaran: "زنكوله", hijazkar_kurd: "حجازكار كرد",
+    bayati_asli: "بياتي أصلي", bayati_muhayyar: "بياتي محير", bayati_shuri: "بياتي شوري",
+    hijaz: "حجاز", shahnaz: "شهناز", kurd: "كرد", saba: "صبا",
+    huzam: "سيكاه هزام", rahat_arwah: "راحة الأرواح", iraq: "عراق", bastanikar: "بستنكار",
+    jaharkah: "جهاركاه", ajam_ushayran: "عجم عشيران", lami: "لامي"
   };
   function maqamDegrees(key, tonic, altForm) {
     const m = MAQAM[key];
@@ -362,30 +485,34 @@
     sel.innerHTML = "";
     for (let i = 0; i < TOTAL; i++) {
       const o = document.createElement("option");
-      o.value = i; o.textContent = (i + 1) + " — " + noteName(i);
+      o.value = i; o.textContent = (i + 1) + " — " + dispName(noteName(i));
       sel.appendChild(o);
     }
   }
-  function fillOptions(sel, noneLabel, obj) {
+  function fillOptions(sel, noneLabel, obj, arMap) {
     sel.innerHTML = '<option value="">' + noneLabel + '</option>';
     for (const key in obj) {
       const o = document.createElement("option");
-      o.value = key; o.textContent = obj[key].name;
+      o.value = key;
+      o.textContent = (LANG === "ar" && arMap && arMap[key]) ? arMap[key] : obj[key].name;
       sel.appendChild(o);
     }
   }
-  const fillJinsSel = (sel) => fillOptions(sel, "— Aucun —", JINS);
-  const fillMaqamSel = (sel) => fillOptions(sel, "— Aucun —", MAQAM);
+  const fillJinsSel = (sel) => fillOptions(sel, t("none"), JINS, JINS_AR);
+  const fillMaqamSel = (sel) => fillOptions(sel, t("none"), MAQAM, MAQAM_AR);
 
   // Menu « Variante » : montre/masque + remplit selon le maqam sélectionné
   function updateAltSel(maqamSel, altSel, wrap) {
     const m = MAQAM[maqamSel.value];
     if (m && m.alt) {
+      const cur = altSel.value;
       altSel.innerHTML = "";
-      m.alt.options.forEach(([label], i) => {
+      m.alt.options.forEach(([label, , labelAr], i) => {
         const o = document.createElement("option");
-        o.value = i; o.textContent = label; altSel.appendChild(o);
+        o.value = i; o.textContent = (LANG === "ar" && labelAr) ? labelAr : label;
+        altSel.appendChild(o);
       });
+      if (cur) altSel.value = cur; // conserve la sélection (ex. au changement de langue)
       wrap.classList.remove("hidden");
     } else {
       wrap.classList.add("hidden");
@@ -592,7 +719,7 @@
       const voice = spawn(i);
       currentSource = voice;
       if (btn) { current = btn; btn.classList.add("playing"); }
-      if (reveal) { status.textContent = "▶ Note n°" + (i + 1); status.style.color = ""; }
+      if (reveal) { status.textContent = t("note_n") + (i + 1); status.style.color = ""; }
       voice.nodes[0].onended = () => {
         if (currentSource === voice) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
       };
@@ -600,22 +727,22 @@
     // Échantillon transposé : a besoin de refBuffer
     if (SOURCE === "sample") {
       if (refBuffer) { begin(); return; }
-      if (reveal) status.textContent = "⏳ Chargement…";
-      loadRef().then(begin).catch(() => { if (reveal) status.textContent = "⚠ Échantillon indisponible"; });
+      if (reveal) status.textContent = t("loading");
+      loadRef().then(begin).catch(() => { if (reveal) status.textContent = t("unavailable"); });
       return;
     }
     // Voix formants préservés : a besoin du buffer PSOLA de la note i
     if (SOURCE === "voix2") {
       if (vbuffers[i]) { begin(); return; }
-      if (reveal) status.textContent = "⏳ Chargement…";
-      loadVBuffer(i).then(begin).catch(() => { if (reveal) status.textContent = "⚠ Note indisponible"; });
+      if (reveal) status.textContent = t("loading");
+      loadVBuffer(i).then(begin).catch(() => { if (reveal) status.textContent = t("unavailable"); });
       return;
     }
     // Enregistrement : a besoin du buffer de la note i ; synthé : aucun
     if (SOURCE !== "rec" || buffers[i]) { begin(); return; }
-    if (reveal) status.textContent = "⏳ Chargement…";
+    if (reveal) status.textContent = t("loading");
     loadBuffer(i).then(begin).catch(err => {
-      if (reveal) { status.textContent = "⚠ Impossible de lire la note n°" + (i + 1) + " — " + err.message; status.style.color = "#ff8a8a"; }
+      if (reveal) { status.textContent = t("read_error") + " — " + err.message; status.style.color = "#ff8a8a"; }
     });
   }
 
@@ -644,11 +771,12 @@
   // Dictée : joue sans révéler la note
   function playIndex(i) { playNote(i, null, false); }
 
-  function makeOctave(title, start, end) {
+  function makeOctave(titleKey, start, end) {
     const sec = document.createElement("section");
     sec.className = "octave";
     const h = document.createElement("h2");
-    h.textContent = title;
+    h.setAttribute("data-i18n", titleKey);
+    h.textContent = t(titleKey);
     sec.appendChild(h);
     const grid = document.createElement("div");
     grid.className = "grid";
@@ -681,9 +809,9 @@
   });
 
   const chromatic = document.getElementById("chromatic");
-  chromatic.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
-  chromatic.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
-  chromatic.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
+  chromatic.appendChild(makeOctave("oct1", 0, 23));
+  chromatic.appendChild(makeOctave("oct2", 24, 47));
+  chromatic.appendChild(makeOctave("octlast", 48, 48));
 
   // ---- Jins en écoute libre ----
   const jinsLibre = document.getElementById("jins-libre");
@@ -714,10 +842,12 @@
     toDictee.classList.toggle("hidden", !val);   // bouton « passer à la dictée »
     if (!val) return;
     const altForm = altFormFor(maqamLibre, altLibre);
-    scaleDegrees(val, +tonicLibre.value, altForm).forEach((d, idx) => {
+    const degs = scaleDegrees(val, +tonicLibre.value, altForm);
+    const spelled = spellScale(degs);
+    degs.forEach((d, idx) => {
       const btn = document.createElement("button");
       btn.className = "note";
-      btn.innerHTML = noteName(d) + '<span class="idx">degré ' + (idx + 1) + '</span>';
+      btn.innerHTML = dispName(spelled[d]) + '<span class="idx">' + t("degre") + ' ' + (idx + 1) + '</span>';
       btn.addEventListener("pointerdown", (e) => { e.preventDefault(); play(d, btn); });
       jinsNotes.appendChild(btn);
     });
@@ -755,6 +885,7 @@
 
   // État du jeu
   let pool = [];      // indices possibles
+  let poolNames = {}; // noms orthographiés (règle enharmonique)
   let answer = -1;    // index de la note à deviner
   let good = 0, tot = 0;
 
@@ -771,7 +902,7 @@
     pool.forEach(i => {
       const btn = document.createElement("button");
       btn.className = "note";
-      btn.innerHTML = noteName(i);
+      btn.innerHTML = dispName(poolNames[i] || noteName(i));
       btn.addEventListener("click", () => guess(i, btn));
       guesses.appendChild(btn);
     });
@@ -789,19 +920,20 @@
   function guess(i, btn) {
     if (nextBtn.classList.contains("hidden") === false) return; // déjà répondu
     tot++;
+    const ansName = dispName(poolNames[answer] || noteName(answer));
     if (i === answer) {
       good++;
       btn.classList.add("correct");
-      feedback.textContent = "✓ Correct ! C'était " + noteName(answer);
+      feedback.textContent = t("correct") + " " + ansName;
       feedback.className = "feedback ok";
     } else {
       btn.classList.add("wrong");
-      feedback.textContent = "✗ Raté. C'était " + noteName(answer);
+      feedback.textContent = t("wrong") + " " + ansName;
       feedback.className = "feedback ko";
-      [...guesses.children].forEach(b => { if (b.textContent === noteName(answer)) b.classList.add("correct"); });
+      [...guesses.children].forEach(b => { if (b.textContent === ansName) b.classList.add("correct"); });
     }
     [...guesses.children].forEach(b => b.disabled = true);
-    scoreEl.textContent = "Score : " + good + " / " + tot;
+    scoreEl.textContent = t("score") + " : " + good + " / " + tot;
     nextBtn.classList.remove("hidden");
   }
 
@@ -826,12 +958,13 @@
 
   function startDictee() {
     const val = activeScale(jinsDictee, maqamDictee);
-    if (!val) { cfgMsg.textContent = "Choisis un jins ou un maqam pour lancer la dictée."; return; }
+    if (!val) { cfgMsg.textContent = t("pick_scale"); return; }
     pool = scaleDegrees(val, +tonicDictee.value, altFormFor(maqamDictee, altDictee));
-    if (pool.length < 2) { cfgMsg.textContent = "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave."; return; }
+    if (pool.length < 2) { cfgMsg.textContent = t("out_of_range"); return; }
+    poolNames = spellScale(pool);
     cfgMsg.textContent = "";
     good = 0; tot = 0;
-    scoreEl.textContent = "Score : 0 / 0";
+    scoreEl.textContent = t("score") + " : 0 / 0";
     cfg.classList.add("hidden");
     game.classList.remove("hidden");
     renderGuesses();
@@ -871,6 +1004,26 @@
     cfg.classList.remove("hidden");
   });
 
+  // ---- Application de la langue ----
+  function applyLang(lang) {
+    LANG = lang;
+    const html = document.documentElement;
+    html.lang = lang;
+    html.dir = (lang === "ar") ? "rtl" : "ltr";
+    document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll(".langbtn").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
+    // re-remplir jins/maqam (libellé « aucun » traduit) en conservant la sélection
+    [[jinsLibre, fillJinsSel], [maqamLibre, fillMaqamSel], [jinsDictee, fillJinsSel], [maqamDictee, fillMaqamSel]]
+      .forEach(([s, fn]) => { const v = s.value; fn(s); s.value = v; });
+    [tonicLibre, tonicDictee].forEach(s => { const v = s.value; fillTonic(s); s.value = v; }); // noms de notes traduits
+    updateAltSel(maqamLibre, altLibre, altLibreWrap);   // libellés des variantes traduits
+    updateAltSel(maqamDictee, altDictee, altDicteeWrap);
+    renderJinsLibre();
+    if (!game.classList.contains("hidden")) scoreEl.textContent = t("score") + " : " + good + " / " + tot;
+  }
+  document.querySelectorAll(".langbtn").forEach(b => b.addEventListener("click", () => applyLang(b.dataset.lang)));
+  applyLang("ar"); // arabe par défaut
+
   // Préchargement en arrière-plan dès l'ouverture (fichiers légers) — clics instantanés.
   // Le décodage ne nécessite pas de geste utilisateur ; seule la lecture en exige un.
   function prefetchAll() {
@@ -883,7 +1036,7 @@
       const i = k++;
       loadVBuffer(i).catch(() => {}).then(() => { // précharge l'« Oud transposé »
         done++;
-        status.textContent = done >= TOTAL ? "" : "⏳ Préchargement " + done + "/" + TOTAL;
+        status.textContent = done >= TOTAL ? "" : t("prefetch") + " " + done + "/" + TOTAL;
         next();
       });
     }
