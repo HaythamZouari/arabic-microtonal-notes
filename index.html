@@ -343,7 +343,7 @@
   const TRIM_END = 0;
 
   // ---- Moteur audio : Web Audio API avec préchargement en mémoire ----
-  let ctx = null, gainNode = null, oudComp = null;
+  let ctx = null, gainNode = null;
   const buffers = new Array(TOTAL);   // AudioBuffer décodés
   const loading = new Array(TOTAL);   // promesses de chargement
 
@@ -353,11 +353,6 @@
     gainNode = ctx.createGain();
     gainNode.gain.value = 1; // volume maître à 100 %
     gainNode.connect(ctx.destination); // son naturel : source -> gain -> sortie
-    // Limiteur dédié à l'oud : permet un fort volume sans écrêtage
-    oudComp = ctx.createDynamicsCompressor();
-    oudComp.threshold.value = -3; oudComp.knee.value = 0; oudComp.ratio.value = 20;
-    oudComp.attack.value = 0.002; oudComp.release.value = 0.12;
-    oudComp.connect(gainNode);
   }
 
   function loadBuffer(i) {
@@ -507,14 +502,11 @@
     return { env, nodes: [s] };
   }
 
-  // Niveau propre à chaque source pour équilibrer le volume perçu
-  const OUD_LEVEL = 4.0; // « Oud transposé » (PSOLA) à 400 %
-
   // Crée et démarre une « voix » pour la note i. Renvoie une poignée { env, nodes }
   function spawn(i) {
     // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
-    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, OUD_LEVEL, oudComp); // PSOLA + limiteur
+    if (SOURCE === "voix2") return bufferVoice(vbuffers[i]); // PSOLA brut, niveau naturel
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
