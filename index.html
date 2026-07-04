@@ -142,6 +142,9 @@
       <label style="font-size:.9rem;">Tonale <select id="tonic-libre"></select></label>
     </div>
     <div class="grid" id="jins-notes" style="margin-top:16px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn hidden" id="to-dictee">🎧 Passer à la dictée sur cette gamme</button>
+    </div>
   </div>
   <div id="chromatic"></div>
 </main>
@@ -633,10 +636,12 @@
     return "";
   }
 
+  const toDictee = document.getElementById("to-dictee");
   function renderJinsLibre() {
     jinsNotes.innerHTML = "";
     const val = activeScale(jinsLibre, maqamLibre);
     chromatic.classList.toggle("hidden", !!val); // masque le chromatique si une gamme est choisie
+    toDictee.classList.toggle("hidden", !val);   // bouton « passer à la dictée »
     if (!val) return;
     const altForm = altFormFor(maqamLibre, altLibre);
     scaleDegrees(val, +tonicLibre.value, altForm).forEach((d, idx) => {
@@ -764,7 +769,7 @@
     updateAltSel(maqamDictee, altDictee, altDicteeWrap);
   });
 
-  document.getElementById("start-dictee").addEventListener("click", () => {
+  function startDictee() {
     const val = activeScale(jinsDictee, maqamDictee);
     pool = val ? scaleDegrees(val, +tonicDictee.value, altFormFor(maqamDictee, altDictee)) : buildPool();
     if (pool.length < 2) { cfgMsg.textContent = val ? "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
@@ -775,7 +780,20 @@
     game.classList.remove("hidden");
     renderGuesses();
     newQuestion();
-  });
+  }
+  document.getElementById("start-dictee").addEventListener("click", startDictee);
+
+  // Depuis l'écoute libre : recopie la gamme sélectionnée puis lance la dictée
+  function goToDicteeFromLibre() {
+    jinsDictee.value = jinsLibre.value;
+    maqamDictee.value = maqamLibre.value;
+    updateAltSel(maqamDictee, altDictee, altDicteeWrap);
+    altDictee.value = altLibre.value || "0";
+    tonicDictee.value = tonicLibre.value;
+    switchMode(true);
+    startDictee();
+  }
+  document.getElementById("to-dictee").addEventListener("click", goToDicteeFromLibre);
 
   document.getElementById("replay").addEventListener("click", () => { if (answer >= 0) playIndex(answer); });
   nextBtn.addEventListener("click", newQuestion);
