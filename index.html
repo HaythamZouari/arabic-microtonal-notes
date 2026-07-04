@@ -188,6 +188,7 @@
     <div class="feedback" id="feedback"></div>
     <div style="text-align:center;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
       <button class="btn hidden" id="next-q">Note suivante ▶</button>
+      <button class="btn ghost" id="to-libre">🎹 Écoute libre sur cette gamme</button>
       <button class="btn ghost" id="back-config">⚙ Changer les réglages</button>
     </div>
   </div>
@@ -794,6 +795,18 @@
     startDictee();
   }
   document.getElementById("to-dictee").addEventListener("click", goToDicteeFromLibre);
+
+  // Depuis la dictée : recopie la gamme vers l'écoute libre et y bascule
+  function goToLibreFromDictee() {
+    jinsLibre.value = jinsDictee.value;
+    maqamLibre.value = maqamDictee.value;
+    updateAltSel(maqamLibre, altLibre, altLibreWrap);
+    altLibre.value = altDictee.value || "0";
+    tonicLibre.value = tonicDictee.value;
+    switchMode(false);
+    renderJinsLibre();
+  }
+  document.getElementById("to-libre").addEventListener("click", goToLibreFromDictee);
 
   document.getElementById("replay").addEventListener("click", () => { if (answer >= 0) playIndex(answer); });
   nextBtn.addEventListener("click", newQuestion);
