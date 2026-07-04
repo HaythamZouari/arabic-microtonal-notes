@@ -343,7 +343,7 @@
   const TRIM_END = 0;
 
   // ---- Moteur audio : Web Audio API avec préchargement en mémoire ----
-  let ctx = null, gainNode = null;
+  let ctx = null, gainNode = null, oudComp = null;
   const buffers = new Array(TOTAL);   // AudioBuffer décodés
   const loading = new Array(TOTAL);   // promesses de chargement
 
@@ -353,6 +353,11 @@
     gainNode = ctx.createGain();
     gainNode.gain.value = 1; // volume maître à 100 %
     gainNode.connect(ctx.destination); // son naturel : source -> gain -> sortie
+    // Limiteur dédié à l'oud : permet un fort volume sans écrêtage
+    oudComp = ctx.createDynamicsCompressor();
+    oudComp.threshold.value = -3; oudComp.knee.value = 0; oudComp.ratio.value = 20;
+    oudComp.attack.value = 0.002; oudComp.release.value = 0.12;
+    oudComp.connect(gainNode);
   }
 
   function loadBuffer(i) {
@@ -488,7 +493,8 @@
   }
 
   // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
-  function bufferVoice(buf, rate, level) {
+  // dest : nœud de sortie (par défaut le gain maître ; le limiteur pour l'oud)
+  function bufferVoice(buf, rate, level, dest) {
     const s = ctx.createBufferSource();
     s.buffer = buf;
     if (rate) s.playbackRate.value = rate;
@@ -496,7 +502,7 @@
     const now = ctx.currentTime;
     env.gain.setValueAtTime(0.0001, now);
     env.gain.linearRampToValueAtTime(level || 1, now + 0.006); // fondu d'entrée
-    s.connect(env).connect(gainNode);
+    s.connect(env).connect(dest || gainNode);
     s.start(0);
     return { env, nodes: [s] };
   }
@@ -508,7 +514,7 @@
   function spawn(i) {
     // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
-    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, OUD_LEVEL); // PSOLA formants préservés
+    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, OUD_LEVEL, oudComp); // PSOLA + limiteur
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
