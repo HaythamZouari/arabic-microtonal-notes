@@ -229,13 +229,38 @@
     return degs.filter(d => d >= 0 && d < TOTAL);
   }
 
-  // Maqamat : combinaison d'ajnas placés à un décalage (en pas) depuis la tonale.
-  // Formes tétracordes de référence + degrés usuels : quinte (Nawa)=14, octave=24.
-  const T_RAST = [4, 3, 3];    // 1, ¾, ¾
-  const T_BAYATI = [3, 3, 4];  // ¾, ¾, 1
+  // Maqamat : combinaison d'ajnas placés à un décalage (en pas) depuis la tonale, en ascendant.
+  // Formes de construction de référence (pas), indépendantes des réglages de jins :
+  const BF = {
+    rast: [4, 3, 3], nahawand: [4, 2, 4], hijaz: [2, 6, 2], kurd: [2, 4, 4],
+    bayati: [3, 3, 4], saba: [3, 3, 2], ajam: [4, 4, 2], nikriz: [4, 2, 6, 2], sikah: [3, 4]
+  };
+  // Décalages : quinte (Nawa) = 14, octave = 24 ; les autres = position du degré − tonique.
   const MAQAM = {
-    rast_asli:    { name: "Rast asli (rast+rast+rast)",  jins: [[T_RAST, 0], [T_RAST, 14], [T_RAST, 24]] },
-    rast_nayrouz: { name: "Rast Nayrouz (rast+bayati)",  jins: [[T_RAST, 0], [T_BAYATI, 14]] }
+    rast_asli:       { name: "Rast asli",        jins: [[BF.rast, 0], [BF.rast, 14], [BF.rast, 24]] },
+    rast_nayrouz:    { name: "Rast Nayrouz",     jins: [[BF.rast, 0], [BF.bayati, 14]] },
+    rast_souznak:    { name: "Rast Souznak",     jins: [[BF.rast, 0], [BF.hijaz, 14]] },
+    rast_dalanshin:  { name: "Rast Dalanshin",   jins: [[BF.rast, 0], [BF.saba, 18]] },
+    nahawand:        { name: "Nahawand",         jins: [[BF.nahawand, 0], [BF.hijaz, 14]] },
+    nikriz:          { name: "Nikriz",           jins: [[BF.nikriz, 0], [BF.nahawand, 14]] },
+    nawa_athar:      { name: "Nawa Athar",       jins: [[BF.nikriz, 0], [BF.hijaz, 14]] },
+    hijazkar:        { name: "Hijazkar",         jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.hijaz, 24]] },
+    zanjaran:        { name: "Zanjaran (Zankoulah)", jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
+    hijazkar_kurd:   { name: "Hijazkar Kurd",    jins: [[BF.kurd, 0], [BF.nahawand, 10], [BF.kurd, 24]] },
+    bayati_asli:     { name: "Bayati asli",      jins: [[BF.bayati, 0], [BF.rast, 10]] },
+    bayati_muhayyar: { name: "Bayati Mouhayyar", jins: [[BF.bayati, 0], [BF.rast, 10], [BF.bayati, 24]] },
+    bayati_shuri:    { name: "Bayati Chouri",    jins: [[BF.bayati, 0], [BF.hijaz, 10], [BF.bayati, 24]] },
+    hijaz:           { name: "Hijaz",            jins: [[BF.hijaz, 0], [BF.rast, 10], [BF.hijaz, 24]] },
+    shahnaz:         { name: "Chahnaz",          jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.nahawand, 24]] },
+    kurd:            { name: "Kurd",             jins: [[BF.kurd, 0], [BF.nahawand, 10]] },
+    saba:            { name: "Saba",             jins: [[BF.saba, 0], [BF.hijaz, 6], [BF.hijaz, 20]] },
+    huzam:           { name: "Sika Houzam",      jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
+    rahat_arwah:     { name: "Rahat al-Arwah",   jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
+    iraq:            { name: "Araq (Iraq)",      jins: [[BF.sikah, 0], [BF.bayati, 7], [BF.rast, 17]] },
+    bastanikar:      { name: "Boustanikar",      jins: [[BF.sikah, 0], [BF.saba, 7], [BF.rast, 17]] },
+    jaharkah:        { name: "Jaharkah",         jins: [[BF.rast, 0], [BF.ajam, 10], [BF.rast, 24]] },
+    ajam_ushayran:   { name: "Ajam Ouchairan",   jins: [[BF.ajam, 0], [BF.kurd, 8], [BF.nahawand, 18]] },
+    lami:            { name: "Lami",             jins: [[BF.kurd, 0], [BF.kurd, 10]] }
   };
   function maqamDegrees(key, tonic) {
     const set = new Set();
