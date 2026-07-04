@@ -628,6 +628,9 @@
   fillJinsSel(jinsLibre);
   fillMaqamSel(maqamLibre);
   fillTonic(tonicLibre);
+  // Sélection par défaut à l'ouverture : Maqam Rast asli sur sa tonale d'origine
+  maqamLibre.value = "rast_asli";
+  tonicLibre.value = MAQAM_TONIC.rast_asli;
 
   // Gamme active (jins ou maqam) sous forme "jins:x" / "maqam:x"
   function activeScale(jinsSel, maqamSel) {
@@ -663,6 +666,8 @@
   });
   altLibre.addEventListener("change", renderJinsLibre);
   tonicLibre.addEventListener("change", renderJinsLibre);
+  updateAltSel(maqamLibre, altLibre, altLibreWrap);
+  renderJinsLibre(); // affiche le maqam par défaut dès l'ouverture
 
   // ================= MODE DICTÉE =================
   // Onglets
@@ -761,6 +766,9 @@
   fillJinsSel(jinsDictee);
   fillMaqamSel(maqamDictee);
   fillTonic(tonicDictee);
+  maqamDictee.value = "rast_asli";
+  tonicDictee.value = MAQAM_TONIC.rast_asli;
+  updateAltSel(maqamDictee, altDictee, altDicteeWrap);
   jinsDictee.addEventListener("change", () => {
     if (jinsDictee.value) { maqamDictee.value = ""; updateAltSel(maqamDictee, altDictee, altDicteeWrap); }
   });
