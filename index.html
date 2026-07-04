@@ -83,6 +83,8 @@
   .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
   .checks label { display: flex; align-items: center; gap: 6px; font-size: .9rem;
     background: rgba(255,255,255,.06); padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .panel select { border-radius: 8px; padding: 5px 8px; font-size: .9rem;
+    background: #3a2a5e; color: #f4f0ff; border: none; margin-left: 4px; }
   .btn {
     cursor: pointer; border: none; border-radius: 12px; padding: 12px 22px;
     font-weight: 700; font-size: 1rem; color: #1b1033;
@@ -114,11 +116,9 @@
   <button id="stop" style="cursor:pointer;border:none;border-radius:10px;padding:8px 18px;font-weight:600;background:#3a2a5e;color:#f4f0ff;box-shadow:0 2px 6px rgba(0,0,0,.3);">⏹ Stop</button>
   <label style="font-size:.9rem;opacity:.85;">🎛 Source
     <select id="source" style="border-radius:8px;padding:5px 8px;font-size:.9rem;background:#3a2a5e;color:#f4f0ff;border:none;">
-      <option value="rec">Enregistrement</option>
-      <option value="tri">Synthé (G2→G4)</option>
-      <option value="oud">Oud / عود (synthétique)</option>
+      <option value="voix2">Oud transposé</option>
+      <option value="violin" selected>Violon (synthétique)</option>
       <option value="piano">Piano (synthétique)</option>
-      <option value="violin">Violon (synthétique)</option>
     </select>
   </label>
   <label style="font-size:.9rem;opacity:.85;">🔊 Gain
@@ -128,12 +128,35 @@
 </div>
 <p id="status" style="text-align:center;min-height:1.2em;margin:0 auto 20px;max-width:980px;font-size:.9rem;opacity:.85;"></p>
 
-<main id="app"></main>
+<main id="app">
+  <div class="panel" style="max-width:760px;">
+    <h2>🎼 Jins / Maqam</h2>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <label style="font-size:.9rem;">Jins <select id="jins-libre"></select></label>
+      <label style="font-size:.9rem;">Maqam <select id="maqam-libre"></select></label>
+      <label style="font-size:.9rem;" id="alt-libre-wrap" class="hidden">Variante <select id="alt-libre"></select></label>
+      <label style="font-size:.9rem;">Tonale <select id="tonic-libre"></select></label>
+    </div>
+    <div class="grid" id="jins-notes" style="margin-top:16px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn hidden" id="to-dictee">🎧 Passer à la dictée sur cette gamme</button>
+    </div>
+  </div>
+  <div id="chromatic"></div>
+</main>
 
 <section id="dictee" class="hidden">
   <!-- Configuration -->
   <div class="panel" id="dictee-config">
     <h2>🎧 Dictée musicale — configuration</h2>
+    <h3>Jins / Maqam (optionnel)</h3>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <label style="font-size:.9rem;">Jins <select id="jins-dictee"></select></label>
+      <label style="font-size:.9rem;">Maqam <select id="maqam-dictee"></select></label>
+      <label style="font-size:.9rem;" id="alt-dictee-wrap" class="hidden">Variante <select id="alt-dictee"></select></label>
+      <label style="font-size:.9rem;">Tonale <select id="tonic-dictee"></select></label>
+    </div>
+    <p style="opacity:.7;font-size:.85rem;margin:8px 0 0;">Si une gamme (jins ou maqam) est choisie, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
     <h3>Octave(s)</h3>
     <div class="checks" id="oct-checks">
       <label><input type="checkbox" class="oct" value="0" checked> 1ʳᵉ octave</label>
@@ -161,6 +184,7 @@
     <div class="feedback" id="feedback"></div>
     <div style="text-align:center;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
       <button class="btn hidden" id="next-q">Note suivante ▶</button>
+      <button class="btn ghost" id="to-libre">🎹 Écoute libre sur cette gamme</button>
       <button class="btn ghost" id="back-config">⚙ Changer les réglages</button>
     </div>
   </div>
@@ -183,6 +207,134 @@
   // Nom du fichier correspondant à l'index de la note
   function fileFor(i) {
     return FOLDER + "/note-" + i + ".wav";
+  }
+
+  // Nom affiché d'une note (avec marqueur d'octave)
+  const noteName = i => NAMES[i % 24] + (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
+
+  // Ajnas (gammes) : intervalles en tons -> pas d'index (1 ton = 4 quarts de ton = 4 pas)
+  const JINS = {
+    // Tétracordes (4 notes)
+    ajam:      { name: "Ajam (1,1)",              steps: [4, 4] },
+    nahawand:  { name: "Nahawand (1,½,1,1)",      steps: [4, 2, 4, 4] },
+    kurd:      { name: "Kurd (½,1,1)",            steps: [2, 4, 4] },
+    hijaz:     { name: "Hijaz (½,1½,½)",          steps: [2, 6, 2] },
+    bayati:    { name: "Bayati (¾,¾,1)",          steps: [3, 3, 4] },
+    rast:      { name: "Rast (1,¾,¾,1)",          steps: [4, 3, 3, 4] },
+    saba:      { name: "Saba (¾,¾,½)",            steps: [3, 3, 2] },
+    // Trichordes (3 notes)
+    sikah:     { name: "Sikah (¾,1)",             steps: [3, 4] },
+    // Pentacordes (5 notes)
+    nikriz:    { name: "Nikriz (1,½,1½,½)",       steps: [4, 2, 6, 2] }
+  };
+  function jinsDegrees(key, tonic) {
+    const degs = [tonic]; let cur = tonic;
+    for (const st of JINS[key].steps) { cur += st; degs.push(cur); }
+    return degs.filter(d => d >= 0 && d < TOTAL);
+  }
+
+  // Maqamat : combinaison d'ajnas placés à un décalage (en pas) depuis la tonale, en ascendant.
+  // Formes de construction de référence (pas), indépendantes des réglages de jins :
+  const BF = {
+    rast: [4, 3, 3], nahawand: [4, 2, 4], hijaz: [2, 6, 2], kurd: [2, 4, 4],
+    bayati: [3, 3, 4], saba: [3, 3, 2], ajam: [4, 4, 2], nikriz: [4, 2, 6, 2], sikah: [3, 4]
+  };
+  // Décalages : quinte (Nawa) = 14, octave = 24 ; les autres = position du degré − tonique.
+  const MAQAM = {
+    rast_asli:       { name: "Rast asli",        jins: [[BF.rast, 0], [BF.rast, 14], [BF.rast, 24]] },
+    rast_nayrouz:    { name: "Rast Nayrouz",     jins: [[BF.rast, 0], [BF.bayati, 14]] },
+    rast_souznak:    { name: "Rast Souznak",     jins: [[BF.rast, 0], [BF.hijaz, 14]] },
+    rast_dalanshin:  { name: "Rast Dalanshin",   jins: [[BF.rast, 0], [BF.saba, 18]] },
+    nahawand:        { name: "Nahawand",         jins: [[BF.nahawand, 0], [BF.hijaz, 14]],
+                       alt: { index: 1, options: [["Hijaz (sur sol)", BF.hijaz], ["Kurd (sur sol)", BF.kurd]] } },
+    nikriz:          { name: "Nikriz",           jins: [[BF.nikriz, 0], [BF.nahawand, 14]] },
+    nawa_athar:      { name: "Nawa Athar",       jins: [[BF.nikriz, 0], [BF.hijaz, 14]] },
+    hijazkar:        { name: "Hijazkar",         jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.hijaz, 24]] },
+    zanjaran:        { name: "Zanjaran (Zankoulah)", jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
+    hijazkar_kurd:   { name: "Hijazkar Kurd",    jins: [[BF.kurd, 0], [BF.nahawand, 10], [BF.kurd, 24]] },
+    bayati_asli:     { name: "Bayati asli",      jins: [[BF.bayati, 0], [BF.rast, 10]],
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+    bayati_muhayyar: { name: "Bayati Mouhayyar", jins: [[BF.bayati, 0], [BF.rast, 10], [BF.bayati, 24]] },
+    bayati_shuri:    { name: "Bayati Chouri",    jins: [[BF.bayati, 0], [BF.hijaz, 10], [BF.bayati, 24]] },
+    hijaz:           { name: "Hijaz",            jins: [[BF.hijaz, 0], [BF.rast, 10], [BF.hijaz, 24]],
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+    shahnaz:         { name: "Chahnaz",          jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.nahawand, 24]] },
+    kurd:            { name: "Kurd",             jins: [[BF.kurd, 0], [BF.nahawand, 10]] },
+    saba:            { name: "Saba",             jins: [[BF.saba, 0], [BF.hijaz, 6], [BF.hijaz, 20]] },
+    huzam:           { name: "Sika Houzam",      jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
+    rahat_arwah:     { name: "Rahat al-Arwah",   jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
+    iraq:            { name: "Araq (Iraq)",      jins: [[BF.sikah, 0], [BF.bayati, 7], [BF.rast, 17]],
+                       alt: { index: 2, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
+    bastanikar:      { name: "Boustanikar",      jins: [[BF.sikah, 0], [BF.saba, 7], [BF.rast, 17]] },
+    jaharkah:        { name: "Jaharkah",         jins: [[BF.rast, 0], [BF.ajam, 10], [BF.rast, 24]] },
+    ajam_ushayran:   { name: "Ajam Ouchairan",   jins: [[BF.ajam, 0], [BF.kurd, 8], [BF.nahawand, 18]] },
+    lami:            { name: "Lami",             jins: [[BF.kurd, 0], [BF.kurd, 10]] }
+  };
+  // Tonique d'origine de chaque maqam, en index de note (Do=10, Ré=14, Mi½♭=17,
+  // Si½♭=7, Si♭=6, Mi=18) — sélection auto de la tonale, transposition possible ensuite.
+  const MAQAM_TONIC = {
+    rast_asli: 10, rast_nayrouz: 10, rast_souznak: 10, rast_dalanshin: 10,
+    nahawand: 10, nikriz: 10, nawa_athar: 10, hijazkar: 10, zanjaran: 10, hijazkar_kurd: 10,
+    bayati_asli: 14, bayati_muhayyar: 14, bayati_shuri: 14, hijaz: 14, shahnaz: 14, kurd: 14, saba: 14,
+    huzam: 17, rahat_arwah: 7, iraq: 7, bastanikar: 7, jaharkah: 10, ajam_ushayran: 6, lami: 18
+  };
+  function maqamDegrees(key, tonic, altForm) {
+    const m = MAQAM[key];
+    const set = new Set();
+    m.jins.forEach(([steps, off], idx) => {
+      const use = (altForm && m.alt && idx === m.alt.index) ? altForm : steps;
+      let cur = tonic + off; set.add(cur);
+      for (const st of use) { cur += st; set.add(cur); }
+    });
+    return [...set].filter(d => d >= 0 && d < TOTAL).sort((a, b) => a - b);
+  }
+
+  // Aiguillage : une valeur "jins:xxx" ou "maqam:xxx" -> liste de degrés
+  // altForm (optionnel) = forme du jins alternatif pour un maqam
+  function scaleDegrees(value, tonic, altForm) {
+    if (!value) return [];
+    const sep = value.indexOf(":");
+    const type = value.slice(0, sep), key = value.slice(sep + 1);
+    return type === "maqam" ? maqamDegrees(key, tonic, altForm) : jinsDegrees(key, tonic);
+  }
+  function fillTonic(sel) {
+    sel.innerHTML = "";
+    for (let i = 0; i < TOTAL; i++) {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = (i + 1) + " — " + noteName(i);
+      sel.appendChild(o);
+    }
+  }
+  function fillOptions(sel, noneLabel, obj) {
+    sel.innerHTML = '<option value="">' + noneLabel + '</option>';
+    for (const key in obj) {
+      const o = document.createElement("option");
+      o.value = key; o.textContent = obj[key].name;
+      sel.appendChild(o);
+    }
+  }
+  const fillJinsSel = (sel) => fillOptions(sel, "— Aucun —", JINS);
+  const fillMaqamSel = (sel) => fillOptions(sel, "— Aucun —", MAQAM);
+
+  // Menu « Variante » : montre/masque + remplit selon le maqam sélectionné
+  function updateAltSel(maqamSel, altSel, wrap) {
+    const m = MAQAM[maqamSel.value];
+    if (m && m.alt) {
+      altSel.innerHTML = "";
+      m.alt.options.forEach(([label], i) => {
+        const o = document.createElement("option");
+        o.value = i; o.textContent = label; altSel.appendChild(o);
+      });
+      wrap.classList.remove("hidden");
+    } else {
+      wrap.classList.add("hidden");
+    }
+  }
+  // Forme du jins alternatif choisi (ou undefined = défaut)
+  function altFormFor(maqamSel, altSel) {
+    const m = MAQAM[maqamSel.value];
+    if (!m || !m.alt) return undefined;
+    return m.alt.options[+altSel.value || 0][1];
   }
 
   const app = document.getElementById("app");
@@ -222,8 +374,8 @@
   const G2 = 98.0;
   const freqFor = i => G2 * Math.pow(2, i / 24);
 
-  // Source active : "rec" (enregistrement), "tri" (synthé simple), "piano", "violin"
-  let SOURCE = "rec";
+  // Source active (violon par défaut)
+  let SOURCE = "violin";
 
   // Voix synthétique : renvoie une poignée { stop(), onended } commune à toutes les sources
   function spawnSynth(i) {
@@ -310,19 +462,59 @@
       oscs.push(o);
     }
 
-    const handle = { onended: null, stop() { oscs.forEach(o => { try { o.stop(); } catch (e) {} }); } };
-    oscs[0].onended = () => { if (handle.onended) handle.onended(); };
-    return handle;
+    return { env, nodes: oscs };
   }
 
-  // Crée et démarre une « voix » (nœud stoppable) pour la note i, connectée au gain maître
-  function spawn(i) {
-    if (SOURCE !== "rec") return spawnSynth(i);
+  // Échantillon de référence transposé : sans titre-24.wav (note 24, 189 Hz),
+  // recadré sur l'attaque (silence de début supprimé) → réponse immédiate.
+  const REF = 23;
+  let refBuffer = null;
+  function loadRef() {
+    if (refBuffer) return Promise.resolve(refBuffer);
+    return fetch(FOLDER + "/ref.wav")
+      .then(r => r.arrayBuffer())
+      .then(ab => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
+      .then(buf => { refBuffer = buf; return buf; });
+  }
+
+  // Voix pitch-shift à formants préservés (PSOLA pré-rendu, voir build_pitch.py)
+  const vbuffers = new Array(TOTAL);
+  const vloading = new Array(TOTAL);
+  function loadVBuffer(i) {
+    if (vbuffers[i]) return Promise.resolve(vbuffers[i]);
+    if (vloading[i]) return vloading[i];
+    vloading[i] = fetch("notes/voix/note-" + i + ".wav")
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
+      .then(ab => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
+      .then(buf => { vbuffers[i] = buf; return buf; })
+      .catch(err => { vloading[i] = null; throw err; });
+    return vloading[i];
+  }
+
+  // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
+  function bufferVoice(buf, rate, level) {
     const s = ctx.createBufferSource();
-    s.buffer = buffers[i];
-    s.connect(gainNode);
+    s.buffer = buf;
+    if (rate) s.playbackRate.value = rate;
+    const env = ctx.createGain();
+    const now = ctx.currentTime;
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.linearRampToValueAtTime(level || 1, now + 0.006); // fondu d'entrée
+    s.connect(env).connect(gainNode);
     s.start(0);
-    return s;
+    return { env, nodes: [s] };
+  }
+
+  // Niveau propre à chaque source pour équilibrer le volume perçu
+  const OUD_LEVEL = 1.9; // « Oud transposé » (PSOLA) remonté au niveau du violon
+
+  // Crée et démarre une « voix » pour la note i. Renvoie une poignée { env, nodes }
+  function spawn(i) {
+    // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
+    if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
+    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, OUD_LEVEL); // PSOLA formants préservés
+    if (SOURCE !== "rec") return spawnSynth(i);
+    return bufferVoice(buffers[i]);
   }
 
   // Lance la note i ; btn (optionnel) = bouton à mettre en surbrillance
@@ -331,14 +523,29 @@
     if (ctx.state === "suspended") ctx.resume();
     const begin = () => {
       stop();
-      const node = spawn(i);
-      currentSource = node;
+      const voice = spawn(i);
+      currentSource = voice;
       if (btn) { current = btn; btn.classList.add("playing"); }
       if (reveal) { status.textContent = "▶ Note n°" + (i + 1); status.style.color = ""; }
-      node.onended = () => {
-        if (currentSource === node) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
+      voice.nodes[0].onended = () => {
+        if (currentSource === voice) { if (btn) btn.classList.remove("playing"); current = null; currentSource = null; }
       };
     };
+    // Échantillon transposé : a besoin de refBuffer
+    if (SOURCE === "sample") {
+      if (refBuffer) { begin(); return; }
+      if (reveal) status.textContent = "⏳ Chargement…";
+      loadRef().then(begin).catch(() => { if (reveal) status.textContent = "⚠ Échantillon indisponible"; });
+      return;
+    }
+    // Voix formants préservés : a besoin du buffer PSOLA de la note i
+    if (SOURCE === "voix2") {
+      if (vbuffers[i]) { begin(); return; }
+      if (reveal) status.textContent = "⏳ Chargement…";
+      loadVBuffer(i).then(begin).catch(() => { if (reveal) status.textContent = "⚠ Note indisponible"; });
+      return;
+    }
+    // Enregistrement : a besoin du buffer de la note i ; synthé : aucun
     if (SOURCE !== "rec" || buffers[i]) { begin(); return; }
     if (reveal) status.textContent = "⏳ Chargement…";
     loadBuffer(i).then(begin).catch(err => {
@@ -347,15 +554,24 @@
   }
 
   function stop() {
-    if (currentSource) { try { currentSource.onended = null; currentSource.stop(); } catch (e) {} currentSource = null; }
+    if (currentSource) {
+      const v = currentSource; currentSource = null;
+      const now = ctx.currentTime;
+      v.nodes.forEach(n => { try { n.onended = null; } catch (e) {} });
+      try {
+        v.env.gain.cancelScheduledValues(now);
+        v.env.gain.setValueAtTime(Math.max(0.0001, v.env.gain.value), now);
+        v.env.gain.linearRampToValueAtTime(0.0001, now + 0.015); // fondu de sortie anti-clic
+      } catch (e) {}
+      v.nodes.forEach(n => { try { n.stop(now + 0.03); } catch (e) {} });
+    }
     if (current) { current.classList.remove("playing"); current = null; }
   }
 
-  // Écoute libre : reclic = arrêt
+  // Écoute libre : chaque appui (re)déclenche la note, comme un pad
   function play(i, btn) {
     initCtx();
     if (ctx.state === "suspended") ctx.resume();
-    if (current === btn) { stop(); status.textContent = ""; return; }
     playNote(i, btn, true);
   }
 
@@ -376,7 +592,7 @@
       const btn = document.createElement("button");
       btn.className = "note";
       btn.innerHTML = name + '<span class="idx">n°' + (i + 1) + '</span>';
-      btn.addEventListener("click", () => play(i, btn));
+      btn.addEventListener("pointerdown", (e) => { e.preventDefault(); play(i, btn); });
       grid.appendChild(btn);
     }
     sec.appendChild(grid);
@@ -397,13 +613,63 @@
     stop();
   });
 
-  app.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
-  app.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
-  app.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
+  const chromatic = document.getElementById("chromatic");
+  chromatic.appendChild(makeOctave("1ʳᵉ octave — Sol → Sol (notes 1 à 24)", 0, 23));
+  chromatic.appendChild(makeOctave("2ᵉ octave — Sol → Sol (notes 25 à 48)", 24, 47));
+  chromatic.appendChild(makeOctave("Sol aigu final (note 49)", 48, 48));
+
+  // ---- Jins en écoute libre ----
+  const jinsLibre = document.getElementById("jins-libre");
+  const maqamLibre = document.getElementById("maqam-libre");
+  const altLibre = document.getElementById("alt-libre");
+  const altLibreWrap = document.getElementById("alt-libre-wrap");
+  const tonicLibre = document.getElementById("tonic-libre");
+  const jinsNotes = document.getElementById("jins-notes");
+  fillJinsSel(jinsLibre);
+  fillMaqamSel(maqamLibre);
+  fillTonic(tonicLibre);
+  // Sélection par défaut à l'ouverture : Maqam Rast asli sur sa tonale d'origine
+  maqamLibre.value = "rast_asli";
+  tonicLibre.value = MAQAM_TONIC.rast_asli;
+
+  // Gamme active (jins ou maqam) sous forme "jins:x" / "maqam:x"
+  function activeScale(jinsSel, maqamSel) {
+    if (maqamSel.value) return "maqam:" + maqamSel.value;
+    if (jinsSel.value) return "jins:" + jinsSel.value;
+    return "";
+  }
+
+  const toDictee = document.getElementById("to-dictee");
+  function renderJinsLibre() {
+    jinsNotes.innerHTML = "";
+    const val = activeScale(jinsLibre, maqamLibre);
+    chromatic.classList.toggle("hidden", !!val); // masque le chromatique si une gamme est choisie
+    toDictee.classList.toggle("hidden", !val);   // bouton « passer à la dictée »
+    if (!val) return;
+    const altForm = altFormFor(maqamLibre, altLibre);
+    scaleDegrees(val, +tonicLibre.value, altForm).forEach((d, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "note";
+      btn.innerHTML = noteName(d) + '<span class="idx">degré ' + (idx + 1) + '</span>';
+      btn.addEventListener("pointerdown", (e) => { e.preventDefault(); play(d, btn); });
+      jinsNotes.appendChild(btn);
+    });
+  }
+  jinsLibre.addEventListener("change", () => {
+    if (jinsLibre.value) { maqamLibre.value = ""; updateAltSel(maqamLibre, altLibre, altLibreWrap); }
+    renderJinsLibre();
+  });
+  maqamLibre.addEventListener("change", () => {
+    if (maqamLibre.value) { jinsLibre.value = ""; tonicLibre.value = MAQAM_TONIC[maqamLibre.value]; } // tonale d'origine
+    updateAltSel(maqamLibre, altLibre, altLibreWrap);
+    renderJinsLibre();
+  });
+  altLibre.addEventListener("change", renderJinsLibre);
+  tonicLibre.addEventListener("change", renderJinsLibre);
+  updateAltSel(maqamLibre, altLibre, altLibreWrap);
+  renderJinsLibre(); // affiche le maqam par défaut dès l'ouverture
 
   // ================= MODE DICTÉE =================
-  const noteName = i => NAMES[i % 24] + (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
-
   // Onglets
   const tabLibre = document.getElementById("tab-libre");
   const tabDictee = document.getElementById("tab-dictee");
@@ -492,9 +758,29 @@
     nextBtn.classList.remove("hidden");
   }
 
-  document.getElementById("start-dictee").addEventListener("click", () => {
-    pool = buildPool();
-    if (pool.length < 2) { cfgMsg.textContent = "Sélectionne au moins 2 notes (octave + notes)."; return; }
+  const jinsDictee = document.getElementById("jins-dictee");
+  const maqamDictee = document.getElementById("maqam-dictee");
+  const altDictee = document.getElementById("alt-dictee");
+  const altDicteeWrap = document.getElementById("alt-dictee-wrap");
+  const tonicDictee = document.getElementById("tonic-dictee");
+  fillJinsSel(jinsDictee);
+  fillMaqamSel(maqamDictee);
+  fillTonic(tonicDictee);
+  maqamDictee.value = "rast_asli";
+  tonicDictee.value = MAQAM_TONIC.rast_asli;
+  updateAltSel(maqamDictee, altDictee, altDicteeWrap);
+  jinsDictee.addEventListener("change", () => {
+    if (jinsDictee.value) { maqamDictee.value = ""; updateAltSel(maqamDictee, altDictee, altDicteeWrap); }
+  });
+  maqamDictee.addEventListener("change", () => {
+    if (maqamDictee.value) { jinsDictee.value = ""; tonicDictee.value = MAQAM_TONIC[maqamDictee.value]; }
+    updateAltSel(maqamDictee, altDictee, altDicteeWrap);
+  });
+
+  function startDictee() {
+    const val = activeScale(jinsDictee, maqamDictee);
+    pool = val ? scaleDegrees(val, +tonicDictee.value, altFormFor(maqamDictee, altDictee)) : buildPool();
+    if (pool.length < 2) { cfgMsg.textContent = val ? "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
     cfgMsg.textContent = "";
     good = 0; tot = 0;
     scoreEl.textContent = "Score : 0 / 0";
@@ -502,7 +788,32 @@
     game.classList.remove("hidden");
     renderGuesses();
     newQuestion();
-  });
+  }
+  document.getElementById("start-dictee").addEventListener("click", startDictee);
+
+  // Depuis l'écoute libre : recopie la gamme sélectionnée puis lance la dictée
+  function goToDicteeFromLibre() {
+    jinsDictee.value = jinsLibre.value;
+    maqamDictee.value = maqamLibre.value;
+    updateAltSel(maqamDictee, altDictee, altDicteeWrap);
+    altDictee.value = altLibre.value || "0";
+    tonicDictee.value = tonicLibre.value;
+    switchMode(true);
+    startDictee();
+  }
+  document.getElementById("to-dictee").addEventListener("click", goToDicteeFromLibre);
+
+  // Depuis la dictée : recopie la gamme vers l'écoute libre et y bascule
+  function goToLibreFromDictee() {
+    jinsLibre.value = jinsDictee.value;
+    maqamLibre.value = maqamDictee.value;
+    updateAltSel(maqamLibre, altLibre, altLibreWrap);
+    altLibre.value = altDictee.value || "0";
+    tonicLibre.value = tonicDictee.value;
+    switchMode(false);
+    renderJinsLibre();
+  }
+  document.getElementById("to-libre").addEventListener("click", goToLibreFromDictee);
 
   document.getElementById("replay").addEventListener("click", () => { if (answer >= 0) playIndex(answer); });
   nextBtn.addEventListener("click", newQuestion);
@@ -522,7 +833,7 @@
     function next() {
       if (k >= TOTAL) return;
       const i = k++;
-      loadBuffer(i).catch(() => {}).then(() => {
+      loadVBuffer(i).catch(() => {}).then(() => { // précharge l'« Oud transposé »
         done++;
         status.textContent = done >= TOTAL ? "" : "⏳ Préchargement " + done + "/" + TOTAL;
         next();
