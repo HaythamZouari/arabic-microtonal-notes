@@ -138,6 +138,7 @@
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
       <label style="font-size:.9rem;">Jins <select id="jins-libre"></select></label>
       <label style="font-size:.9rem;">Maqam <select id="maqam-libre"></select></label>
+      <label style="font-size:.9rem;" id="alt-libre-wrap" class="hidden">Variante <select id="alt-libre"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-libre"></select></label>
     </div>
     <div class="grid" id="jins-notes" style="margin-top:16px;"></div>
@@ -153,6 +154,7 @@
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
       <label style="font-size:.9rem;">Jins <select id="jins-dictee"></select></label>
       <label style="font-size:.9rem;">Maqam <select id="maqam-dictee"></select></label>
+      <label style="font-size:.9rem;" id="alt-dictee-wrap" class="hidden">Variante <select id="alt-dictee"></select></label>
       <label style="font-size:.9rem;">Tonale <select id="tonic-dictee"></select></label>
     </div>
     <p style="opacity:.7;font-size:.85rem;margin:8px 0 0;">Si une gamme (jins ou maqam) est choisie, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
@@ -243,22 +245,26 @@
     rast_nayrouz:    { name: "Rast Nayrouz",     jins: [[BF.rast, 0], [BF.bayati, 14]] },
     rast_souznak:    { name: "Rast Souznak",     jins: [[BF.rast, 0], [BF.hijaz, 14]] },
     rast_dalanshin:  { name: "Rast Dalanshin",   jins: [[BF.rast, 0], [BF.saba, 18]] },
-    nahawand:        { name: "Nahawand",         jins: [[BF.nahawand, 0], [BF.hijaz, 14]] },
+    nahawand:        { name: "Nahawand",         jins: [[BF.nahawand, 0], [BF.hijaz, 14]],
+                       alt: { index: 1, options: [["Hijaz (sur sol)", BF.hijaz], ["Kurd (sur sol)", BF.kurd]] } },
     nikriz:          { name: "Nikriz",           jins: [[BF.nikriz, 0], [BF.nahawand, 14]] },
     nawa_athar:      { name: "Nawa Athar",       jins: [[BF.nikriz, 0], [BF.hijaz, 14]] },
     hijazkar:        { name: "Hijazkar",         jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.hijaz, 24]] },
     zanjaran:        { name: "Zanjaran (Zankoulah)", jins: [[BF.hijaz, 0], [BF.ajam, 10], [BF.hijaz, 24]] },
     hijazkar_kurd:   { name: "Hijazkar Kurd",    jins: [[BF.kurd, 0], [BF.nahawand, 10], [BF.kurd, 24]] },
-    bayati_asli:     { name: "Bayati asli",      jins: [[BF.bayati, 0], [BF.rast, 10]] },
+    bayati_asli:     { name: "Bayati asli",      jins: [[BF.bayati, 0], [BF.rast, 10]],
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
     bayati_muhayyar: { name: "Bayati Mouhayyar", jins: [[BF.bayati, 0], [BF.rast, 10], [BF.bayati, 24]] },
     bayati_shuri:    { name: "Bayati Chouri",    jins: [[BF.bayati, 0], [BF.hijaz, 10], [BF.bayati, 24]] },
-    hijaz:           { name: "Hijaz",            jins: [[BF.hijaz, 0], [BF.rast, 10], [BF.hijaz, 24]] },
+    hijaz:           { name: "Hijaz",            jins: [[BF.hijaz, 0], [BF.rast, 10], [BF.hijaz, 24]],
+                       alt: { index: 1, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
     shahnaz:         { name: "Chahnaz",          jins: [[BF.hijaz, 0], [BF.hijaz, 14], [BF.nahawand, 24]] },
     kurd:            { name: "Kurd",             jins: [[BF.kurd, 0], [BF.nahawand, 10]] },
     saba:            { name: "Saba",             jins: [[BF.saba, 0], [BF.hijaz, 6], [BF.hijaz, 20]] },
     huzam:           { name: "Sika Houzam",      jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
     rahat_arwah:     { name: "Rahat al-Arwah",   jins: [[BF.sikah, 0], [BF.hijaz, 7], [BF.rast, 17]] },
-    iraq:            { name: "Araq (Iraq)",      jins: [[BF.sikah, 0], [BF.bayati, 7], [BF.rast, 17]] },
+    iraq:            { name: "Araq (Iraq)",      jins: [[BF.sikah, 0], [BF.bayati, 7], [BF.rast, 17]],
+                       alt: { index: 2, options: [["Rast (sur sol)", BF.rast], ["Nahawand (sur sol)", BF.nahawand]] } },
     bastanikar:      { name: "Boustanikar",      jins: [[BF.sikah, 0], [BF.saba, 7], [BF.rast, 17]] },
     jaharkah:        { name: "Jaharkah",         jins: [[BF.rast, 0], [BF.ajam, 10], [BF.rast, 24]] },
     ajam_ushayran:   { name: "Ajam Ouchairan",   jins: [[BF.ajam, 0], [BF.kurd, 8], [BF.nahawand, 18]] },
@@ -272,21 +278,24 @@
     bayati_asli: 14, bayati_muhayyar: 14, bayati_shuri: 14, hijaz: 14, shahnaz: 14, kurd: 14, saba: 14,
     huzam: 17, rahat_arwah: 7, iraq: 7, bastanikar: 7, jaharkah: 10, ajam_ushayran: 6, lami: 18
   };
-  function maqamDegrees(key, tonic) {
+  function maqamDegrees(key, tonic, altForm) {
+    const m = MAQAM[key];
     const set = new Set();
-    MAQAM[key].jins.forEach(([steps, off]) => {
+    m.jins.forEach(([steps, off], idx) => {
+      const use = (altForm && m.alt && idx === m.alt.index) ? altForm : steps;
       let cur = tonic + off; set.add(cur);
-      for (const st of steps) { cur += st; set.add(cur); }
+      for (const st of use) { cur += st; set.add(cur); }
     });
     return [...set].filter(d => d >= 0 && d < TOTAL).sort((a, b) => a - b);
   }
 
   // Aiguillage : une valeur "jins:xxx" ou "maqam:xxx" -> liste de degrés
-  function scaleDegrees(value, tonic) {
+  // altForm (optionnel) = forme du jins alternatif pour un maqam
+  function scaleDegrees(value, tonic, altForm) {
     if (!value) return [];
     const sep = value.indexOf(":");
     const type = value.slice(0, sep), key = value.slice(sep + 1);
-    return type === "maqam" ? maqamDegrees(key, tonic) : jinsDegrees(key, tonic);
+    return type === "maqam" ? maqamDegrees(key, tonic, altForm) : jinsDegrees(key, tonic);
   }
   function fillTonic(sel) {
     sel.innerHTML = "";
@@ -306,6 +315,27 @@
   }
   const fillJinsSel = (sel) => fillOptions(sel, "— Aucun —", JINS);
   const fillMaqamSel = (sel) => fillOptions(sel, "— Aucun —", MAQAM);
+
+  // Menu « Variante » : montre/masque + remplit selon le maqam sélectionné
+  function updateAltSel(maqamSel, altSel, wrap) {
+    const m = MAQAM[maqamSel.value];
+    if (m && m.alt) {
+      altSel.innerHTML = "";
+      m.alt.options.forEach(([label], i) => {
+        const o = document.createElement("option");
+        o.value = i; o.textContent = label; altSel.appendChild(o);
+      });
+      wrap.classList.remove("hidden");
+    } else {
+      wrap.classList.add("hidden");
+    }
+  }
+  // Forme du jins alternatif choisi (ou undefined = défaut)
+  function altFormFor(maqamSel, altSel) {
+    const m = MAQAM[maqamSel.value];
+    if (!m || !m.alt) return undefined;
+    return m.alt.options[+altSel.value || 0][1];
+  }
 
   const app = document.getElementById("app");
   const status = document.getElementById("status");
@@ -589,6 +619,8 @@
   // ---- Jins en écoute libre ----
   const jinsLibre = document.getElementById("jins-libre");
   const maqamLibre = document.getElementById("maqam-libre");
+  const altLibre = document.getElementById("alt-libre");
+  const altLibreWrap = document.getElementById("alt-libre-wrap");
   const tonicLibre = document.getElementById("tonic-libre");
   const jinsNotes = document.getElementById("jins-notes");
   fillJinsSel(jinsLibre);
@@ -607,7 +639,8 @@
     const val = activeScale(jinsLibre, maqamLibre);
     chromatic.classList.toggle("hidden", !!val); // masque le chromatique si une gamme est choisie
     if (!val) return;
-    scaleDegrees(val, +tonicLibre.value).forEach((d, idx) => {
+    const altForm = altFormFor(maqamLibre, altLibre);
+    scaleDegrees(val, +tonicLibre.value, altForm).forEach((d, idx) => {
       const btn = document.createElement("button");
       btn.className = "note";
       btn.innerHTML = noteName(d) + '<span class="idx">degré ' + (idx + 1) + '</span>';
@@ -615,11 +648,16 @@
       jinsNotes.appendChild(btn);
     });
   }
-  jinsLibre.addEventListener("change", () => { if (jinsLibre.value) maqamLibre.value = ""; renderJinsLibre(); });
-  maqamLibre.addEventListener("change", () => {
-    if (maqamLibre.value) { jinsLibre.value = ""; tonicLibre.value = MAQAM_TONIC[maqamLibre.value]; } // tonale d'origine
+  jinsLibre.addEventListener("change", () => {
+    if (jinsLibre.value) { maqamLibre.value = ""; updateAltSel(maqamLibre, altLibre, altLibreWrap); }
     renderJinsLibre();
   });
+  maqamLibre.addEventListener("change", () => {
+    if (maqamLibre.value) { jinsLibre.value = ""; tonicLibre.value = MAQAM_TONIC[maqamLibre.value]; } // tonale d'origine
+    updateAltSel(maqamLibre, altLibre, altLibreWrap);
+    renderJinsLibre();
+  });
+  altLibre.addEventListener("change", renderJinsLibre);
   tonicLibre.addEventListener("change", renderJinsLibre);
 
   // ================= MODE DICTÉE =================
@@ -713,18 +751,23 @@
 
   const jinsDictee = document.getElementById("jins-dictee");
   const maqamDictee = document.getElementById("maqam-dictee");
+  const altDictee = document.getElementById("alt-dictee");
+  const altDicteeWrap = document.getElementById("alt-dictee-wrap");
   const tonicDictee = document.getElementById("tonic-dictee");
   fillJinsSel(jinsDictee);
   fillMaqamSel(maqamDictee);
   fillTonic(tonicDictee);
-  jinsDictee.addEventListener("change", () => { if (jinsDictee.value) maqamDictee.value = ""; });
+  jinsDictee.addEventListener("change", () => {
+    if (jinsDictee.value) { maqamDictee.value = ""; updateAltSel(maqamDictee, altDictee, altDicteeWrap); }
+  });
   maqamDictee.addEventListener("change", () => {
     if (maqamDictee.value) { jinsDictee.value = ""; tonicDictee.value = MAQAM_TONIC[maqamDictee.value]; }
+    updateAltSel(maqamDictee, altDictee, altDicteeWrap);
   });
 
   document.getElementById("start-dictee").addEventListener("click", () => {
     const val = activeScale(jinsDictee, maqamDictee);
-    pool = val ? scaleDegrees(val, +tonicDictee.value) : buildPool();
+    pool = val ? scaleDegrees(val, +tonicDictee.value, altFormFor(maqamDictee, altDictee)) : buildPool();
     if (pool.length < 2) { cfgMsg.textContent = val ? "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
     cfgMsg.textContent = "";
     good = 0; tot = 0;
