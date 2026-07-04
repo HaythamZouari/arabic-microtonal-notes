@@ -323,7 +323,7 @@
       tab_libre: "🎹 استماع حر", tab_dictee: "🎧 إملاء",
       lbl_instrument: "🎛 الآلة", gain_oud: "🔊 مستوى العود",
       src_oud: "عود", src_violin: "كمان", src_piano: "بيانو",
-      h_jinsmaqam: "🎼 الجنس / المقام", lbl_jins: "جنس", lbl_maqam: "مقام", lbl_variante: "بديل", lbl_tonale: "إرتكاز",
+      h_jinsmaqam: "🎼 الجنس / المقام", lbl_jins: "جنس", lbl_maqam: "مقام", lbl_variante: "إمكانيات", lbl_tonale: "إرتكاز",
       btn_to_dictee: "🎧 الانتقال إلى الإملاء على هذه الجملة",
       h_dictee: "🎧 الإملاء الموسيقي", h_jinsmaqam_opt: "الجنس / المقام (اختياري)",
       help_dictee: "يعتمد الإملاء على نغمات الجنس أو المقام المختار.",
@@ -349,7 +349,34 @@
   }
 
   // Nom affiché d'une note (avec marqueur d'octave)
-  const noteName = i => NAMES[i % 24] + (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
+  const octSuffix = i => (Math.floor(i / 24) ? " " + "'".repeat(Math.floor(i / 24)) : "");
+  const noteName = i => NAMES[i % 24] + octSuffix(i);
+
+  // Enharmonies (bémol de la note suivante) pour éviter deux notes de même lettre
+  const ENHARM = { 2: "Sol ♯", 6: "La ♯", 12: "Ré ♭", 16: "Ré ♯", 22: "Sol ♭" };
+  const rootKey = nm => {
+    const r = nm.match(/^(Do|Ré|Mi|Fa|Sol|La|Si)/);
+    const oct = (nm.match(/'+$/) || [""])[0];
+    return (r ? r[1] : nm) + oct;
+  };
+  const isNatural = i => !/[♭♯½]/.test(NAMES[i % 24]);
+
+  // Renomme les notes d'une gamme pour qu'aucune lettre n'apparaisse deux fois
+  // (ex. Do + Do♯ → Do + Ré♭). Renvoie { index: nom }.
+  function spellScale(indices) {
+    const names = {}, used = new Set();
+    const sorted = [...indices].sort((a, b) => a - b);
+    sorted.forEach(i => { if (isNatural(i)) { const nm = noteName(i); names[i] = nm; used.add(rootKey(nm)); } });
+    sorted.forEach(i => {
+      if (isNatural(i)) return;
+      const prim = noteName(i);
+      if (!used.has(rootKey(prim))) { names[i] = prim; used.add(rootKey(prim)); return; }
+      const alt = ENHARM[i % 24];
+      if (alt) { const an = alt + octSuffix(i); if (!used.has(rootKey(an))) { names[i] = an; used.add(rootKey(an)); return; } }
+      names[i] = prim; used.add(rootKey(prim));
+    });
+    return names;
+  }
 
   // Ajnas (gammes) : intervalles en tons -> pas d'index (1 ton = 4 quarts de ton = 4 pas)
   const JINS = {
@@ -808,10 +835,12 @@
     toDictee.classList.toggle("hidden", !val);   // bouton « passer à la dictée »
     if (!val) return;
     const altForm = altFormFor(maqamLibre, altLibre);
-    scaleDegrees(val, +tonicLibre.value, altForm).forEach((d, idx) => {
+    const degs = scaleDegrees(val, +tonicLibre.value, altForm);
+    const spelled = spellScale(degs);
+    degs.forEach((d, idx) => {
       const btn = document.createElement("button");
       btn.className = "note";
-      btn.innerHTML = noteName(d) + '<span class="idx">' + t("degre") + ' ' + (idx + 1) + '</span>';
+      btn.innerHTML = spelled[d] + '<span class="idx">' + t("degre") + ' ' + (idx + 1) + '</span>';
       btn.addEventListener("pointerdown", (e) => { e.preventDefault(); play(d, btn); });
       jinsNotes.appendChild(btn);
     });
@@ -849,6 +878,7 @@
 
   // État du jeu
   let pool = [];      // indices possibles
+  let poolNames = {}; // noms orthographiés (règle enharmonique)
   let answer = -1;    // index de la note à deviner
   let good = 0, tot = 0;
 
@@ -865,7 +895,7 @@
     pool.forEach(i => {
       const btn = document.createElement("button");
       btn.className = "note";
-      btn.innerHTML = noteName(i);
+      btn.innerHTML = poolNames[i] || noteName(i);
       btn.addEventListener("click", () => guess(i, btn));
       guesses.appendChild(btn);
     });
@@ -883,16 +913,17 @@
   function guess(i, btn) {
     if (nextBtn.classList.contains("hidden") === false) return; // déjà répondu
     tot++;
+    const ansName = poolNames[answer] || noteName(answer);
     if (i === answer) {
       good++;
       btn.classList.add("correct");
-      feedback.textContent = t("correct") + " " + noteName(answer);
+      feedback.textContent = t("correct") + " " + ansName;
       feedback.className = "feedback ok";
     } else {
       btn.classList.add("wrong");
-      feedback.textContent = t("wrong") + " " + noteName(answer);
+      feedback.textContent = t("wrong") + " " + ansName;
       feedback.className = "feedback ko";
-      [...guesses.children].forEach(b => { if (b.textContent === noteName(answer)) b.classList.add("correct"); });
+      [...guesses.children].forEach(b => { if (b.textContent === ansName) b.classList.add("correct"); });
     }
     [...guesses.children].forEach(b => b.disabled = true);
     scoreEl.textContent = t("score") + " : " + good + " / " + tot;
@@ -923,6 +954,7 @@
     if (!val) { cfgMsg.textContent = t("pick_scale"); return; }
     pool = scaleDegrees(val, +tonicDictee.value, altFormFor(maqamDictee, altDictee));
     if (pool.length < 2) { cfgMsg.textContent = t("out_of_range"); return; }
+    poolNames = spellScale(pool);
     cfgMsg.textContent = "";
     good = 0; tot = 0;
     scoreEl.textContent = t("score") + " : 0 / 0";
