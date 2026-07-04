@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maqām Lab — écoute & dictée des maqāmāt arabes</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23241640'/><path d='M25 13 h6 v37 h-6 z' fill='%23ffce5c'/><path d='M31 31 C 49 26 52 43 37 50 C 32 52 29 55 31 59 Z' fill='%23ffce5c'/><line x1='17' y1='30' x2='41' y2='17' stroke='%23ffce5c' stroke-width='5' stroke-linecap='round'/></svg>">
 <style>
   :root {
     --bg1: #150e2b;
@@ -41,6 +42,10 @@
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   header p { color: var(--muted); margin: 4px 0; font-size: .95rem; }
+  .brand-mark { display: inline-block; height: 1.02em; margin-right: .2em; vertical-align: -0.16em; }
+  .brand-mark svg { height: 100%; width: auto; }
+  .brand-mark path { fill: var(--gold); }
+  .brand-mark line { stroke: var(--gold); }
   .rule { width: 120px; height: 2px; margin: 14px auto 0; border-radius: 2px;
     background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 
@@ -162,7 +167,11 @@
 <body>
 <div class="wrap">
 <header>
-  <h1>🎵 Maqām Lab</h1>
+  <h1><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 2.5 h2.9 v27.5 h-2.9 z"/>
+    <path d="M9.9 14.5 C 20 12, 23 20, 15.5 24 C 12.7 25.5, 10.9 27.2, 9.9 30 Z"/>
+    <line x1="2.5" y1="13" x2="14" y2="6" stroke-width="2.4" stroke-linecap="round"/>
+  </svg></span>Maqām Lab</h1>
   <p>Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins &amp; dictée</p>
   <div class="rule"></div>
 </header>
