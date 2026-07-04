@@ -213,17 +213,7 @@
       <div class="field hidden" id="alt-dictee-wrap"><span>Variante</span><select id="alt-dictee"></select></div>
       <div class="field"><span>Tonale</span><select id="tonic-dictee"></select></div>
     </div>
-    <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0;">Si une gamme (jins ou maqam) est choisie, la dictée porte sur ses notes (les réglages ci-dessous sont ignorés).</p>
-    <h3>Octave(s)</h3>
-    <div class="checks" id="oct-checks">
-      <label><input type="checkbox" class="oct" value="0" checked> 1ʳᵉ octave</label>
-      <label><input type="checkbox" class="oct" value="24"> 2ᵉ octave</label>
-    </div>
-    <h3>Notes à deviner
-      <button class="btn ghost small" id="all-notes">Tout</button>
-      <button class="btn ghost small" id="none-notes">Aucune</button>
-    </h3>
-    <div class="checks" id="note-checks"></div>
+    <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0;">La dictée porte sur les notes du jins ou du maqam choisi.</p>
     <p id="cfg-msg" style="color:var(--bad);min-height:1.2em;margin:12px 0 0;font-size:.9rem;"></p>
     <div class="actions">
       <button class="btn" id="start-dictee">▶ Commencer la dictée</button>
@@ -745,18 +735,6 @@
   tabLibre.addEventListener("click", () => switchMode(false));
   tabDictee.addEventListener("click", () => switchMode(true));
 
-  // Cases à cocher des notes (les 24 hauteurs)
-  const noteChecks = document.getElementById("note-checks");
-  NAMES.forEach((n, p) => {
-    const l = document.createElement("label");
-    l.innerHTML = '<input type="checkbox" class="note-chk" value="' + p + '" checked> ' + n;
-    noteChecks.appendChild(l);
-  });
-  document.getElementById("all-notes").addEventListener("click",
-    () => document.querySelectorAll(".note-chk").forEach(c => c.checked = true));
-  document.getElementById("none-notes").addEventListener("click",
-    () => document.querySelectorAll(".note-chk").forEach(c => c.checked = false));
-
   // État du jeu
   let pool = [];      // indices possibles
   let answer = -1;    // index de la note à deviner
@@ -769,14 +747,6 @@
   const feedback = document.getElementById("feedback");
   const scoreEl = document.getElementById("score");
   const nextBtn = document.getElementById("next-q");
-
-  function buildPool() {
-    const octs = [...document.querySelectorAll(".oct:checked")].map(c => +c.value);
-    const pcs = [...document.querySelectorAll(".note-chk:checked")].map(c => +c.value);
-    const p = [];
-    octs.forEach(base => pcs.forEach(pc => p.push(base + pc)));
-    return p.sort((a, b) => a - b);
-  }
 
   function renderGuesses() {
     guesses.innerHTML = "";
@@ -838,8 +808,9 @@
 
   function startDictee() {
     const val = activeScale(jinsDictee, maqamDictee);
-    pool = val ? scaleDegrees(val, +tonicDictee.value, altFormFor(maqamDictee, altDictee)) : buildPool();
-    if (pool.length < 2) { cfgMsg.textContent = val ? "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave." : "Sélectionne au moins 2 notes (octave + notes)."; return; }
+    if (!val) { cfgMsg.textContent = "Choisis un jins ou un maqam pour lancer la dictée."; return; }
+    pool = scaleDegrees(val, +tonicDictee.value, altFormFor(maqamDictee, altDictee));
+    if (pool.length < 2) { cfgMsg.textContent = "La gamme ne tient pas dans la tessiture à cette tonale — choisis une tonale plus grave."; return; }
     cfgMsg.textContent = "";
     good = 0; tot = 0;
     scoreEl.textContent = "Score : 0 / 0";
