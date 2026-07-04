@@ -565,11 +565,10 @@
     if (current) { current.classList.remove("playing"); current = null; }
   }
 
-  // Écoute libre : reclic = arrêt
+  // Écoute libre : chaque appui (re)déclenche la note, comme un pad
   function play(i, btn) {
     initCtx();
     if (ctx.state === "suspended") ctx.resume();
-    if (current === btn) { stop(); status.textContent = ""; return; }
     playNote(i, btn, true);
   }
 
@@ -590,7 +589,7 @@
       const btn = document.createElement("button");
       btn.className = "note";
       btn.innerHTML = name + '<span class="idx">n°' + (i + 1) + '</span>';
-      btn.addEventListener("click", () => play(i, btn));
+      btn.addEventListener("pointerdown", (e) => { e.preventDefault(); play(i, btn); });
       grid.appendChild(btn);
     }
     sec.appendChild(grid);
@@ -644,7 +643,7 @@
       const btn = document.createElement("button");
       btn.className = "note";
       btn.innerHTML = noteName(d) + '<span class="idx">degré ' + (idx + 1) + '</span>';
-      btn.addEventListener("click", () => play(d, btn));
+      btn.addEventListener("pointerdown", (e) => { e.preventDefault(); play(d, btn); });
       jinsNotes.appendChild(btn);
     });
   }
