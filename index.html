@@ -117,12 +117,12 @@
   <label style="font-size:.9rem;opacity:.85;">🎛 Source
     <select id="source" style="border-radius:8px;padding:5px 8px;font-size:.9rem;background:#3a2a5e;color:#f4f0ff;border:none;">
       <option value="rec">Enregistrement</option>
-      <option value="voix2">Voix (formants préservés)</option>
+      <option value="voix2">Oud transposé</option>
       <option value="sample">Échantillon (voix transposée)</option>
       <option value="tri">Synthé (G2→G4)</option>
       <option value="oud">Oud / عود (synthétique)</option>
       <option value="piano">Piano (synthétique)</option>
-      <option value="violin">Violon (synthétique)</option>
+      <option value="violin" selected>Violon (synthétique)</option>
     </select>
   </label>
   <label style="font-size:.9rem;opacity:.85;">🔊 Gain
@@ -378,8 +378,8 @@
   const G2 = 98.0;
   const freqFor = i => G2 * Math.pow(2, i / 24);
 
-  // Source active : "rec" (enregistrement), "tri" (synthé simple), "piano", "violin"
-  let SOURCE = "rec";
+  // Source active (violon par défaut)
+  let SOURCE = "violin";
 
   // Voix synthétique : renvoie une poignée { stop(), onended } commune à toutes les sources
   function spawnSynth(i) {
@@ -496,24 +496,27 @@
   }
 
   // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
-  function bufferVoice(buf, rate) {
+  function bufferVoice(buf, rate, level) {
     const s = ctx.createBufferSource();
     s.buffer = buf;
     if (rate) s.playbackRate.value = rate;
     const env = ctx.createGain();
     const now = ctx.currentTime;
     env.gain.setValueAtTime(0.0001, now);
-    env.gain.linearRampToValueAtTime(1, now + 0.006); // fondu d'entrée
+    env.gain.linearRampToValueAtTime(level || 1, now + 0.006); // fondu d'entrée
     s.connect(env).connect(gainNode);
     s.start(0);
     return { env, nodes: [s] };
   }
 
+  // Niveau propre à chaque source pour équilibrer le volume perçu
+  const OUD_LEVEL = 1.9; // « Oud transposé » (PSOLA) remonté au niveau du violon
+
   // Crée et démarre une « voix » pour la note i. Renvoie une poignée { env, nodes }
   function spawn(i) {
     // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
-    if (SOURCE === "voix2") return bufferVoice(vbuffers[i]); // PSOLA formants préservés
+    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, OUD_LEVEL); // PSOLA formants préservés
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
