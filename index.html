@@ -117,6 +117,7 @@
   <label style="font-size:.9rem;opacity:.85;">🎛 Source
     <select id="source" style="border-radius:8px;padding:5px 8px;font-size:.9rem;background:#3a2a5e;color:#f4f0ff;border:none;">
       <option value="rec">Enregistrement</option>
+      <option value="voix2">Voix (formants préservés)</option>
       <option value="sample">Échantillon (voix transposée)</option>
       <option value="tri">Synthé (G2→G4)</option>
       <option value="oud">Oud / عود (synthétique)</option>
@@ -384,6 +385,20 @@
       .then(buf => { refBuffer = buf; return buf; });
   }
 
+  // Voix pitch-shift à formants préservés (PSOLA pré-rendu, voir build_pitch.py)
+  const vbuffers = new Array(TOTAL);
+  const vloading = new Array(TOTAL);
+  function loadVBuffer(i) {
+    if (vbuffers[i]) return Promise.resolve(vbuffers[i]);
+    if (vloading[i]) return vloading[i];
+    vloading[i] = fetch("notes/voix/note-" + i + ".wav")
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
+      .then(ab => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
+      .then(buf => { vbuffers[i] = buf; return buf; })
+      .catch(err => { vloading[i] = null; throw err; });
+    return vloading[i];
+  }
+
   // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
   function bufferVoice(buf, rate) {
     const s = ctx.createBufferSource();
@@ -402,6 +417,7 @@
   function spawn(i) {
     // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
+    if (SOURCE === "voix2") return bufferVoice(vbuffers[i]); // PSOLA formants préservés
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
@@ -425,6 +441,13 @@
       if (refBuffer) { begin(); return; }
       if (reveal) status.textContent = "⏳ Chargement…";
       loadRef().then(begin).catch(() => { if (reveal) status.textContent = "⚠ Échantillon indisponible"; });
+      return;
+    }
+    // Voix formants préservés : a besoin du buffer PSOLA de la note i
+    if (SOURCE === "voix2") {
+      if (vbuffers[i]) { begin(); return; }
+      if (reveal) status.textContent = "⏳ Chargement…";
+      loadVBuffer(i).then(begin).catch(() => { if (reveal) status.textContent = "⚠ Note indisponible"; });
       return;
     }
     // Enregistrement : a besoin du buffer de la note i ; synthé : aucun
