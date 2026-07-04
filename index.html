@@ -116,13 +116,9 @@
   <button id="stop" style="cursor:pointer;border:none;border-radius:10px;padding:8px 18px;font-weight:600;background:#3a2a5e;color:#f4f0ff;box-shadow:0 2px 6px rgba(0,0,0,.3);">⏹ Stop</button>
   <label style="font-size:.9rem;opacity:.85;">🎛 Source
     <select id="source" style="border-radius:8px;padding:5px 8px;font-size:.9rem;background:#3a2a5e;color:#f4f0ff;border:none;">
-      <option value="rec">Enregistrement</option>
       <option value="voix2">Oud transposé</option>
-      <option value="sample">Échantillon (voix transposée)</option>
-      <option value="tri">Synthé (G2→G4)</option>
-      <option value="oud">Oud / عود (synthétique)</option>
-      <option value="piano">Piano (synthétique)</option>
       <option value="violin" selected>Violon (synthétique)</option>
+      <option value="piano">Piano (synthétique)</option>
     </select>
   </label>
   <label style="font-size:.9rem;opacity:.85;">🔊 Gain
@@ -823,14 +819,13 @@
   // Le décodage ne nécessite pas de geste utilisateur ; seule la lecture en exige un.
   function prefetchAll() {
     initCtx();
-    loadRef().catch(() => {}); // échantillon transposé prêt d'emblée
     let done = 0;
     const CONCURRENCY = 6;
     let k = 0;
     function next() {
       if (k >= TOTAL) return;
       const i = k++;
-      loadBuffer(i).catch(() => {}).then(() => {
+      loadVBuffer(i).catch(() => {}).then(() => { // précharge l'« Oud transposé »
         done++;
         status.textContent = done >= TOTAL ? "" : "⏳ Préchargement " + done + "/" + TOTAL;
         next();
