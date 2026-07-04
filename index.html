@@ -417,6 +417,20 @@
     bayati_asli: 14, bayati_muhayyar: 14, bayati_shuri: 14, hijaz: 14, shahnaz: 14, kurd: 14, saba: 14,
     huzam: 17, rahat_arwah: 7, iraq: 7, bastanikar: 7, jaharkah: 10, ajam_ushayran: 6, lami: 18
   };
+  // Noms en lettres arabes (affichés quand la langue est l'arabe)
+  const JINS_AR = {
+    ajam: "عجم", nahawand: "نهاوند", kurd: "كرد", hijaz: "حجاز", bayati: "بياتي",
+    rast: "رست", saba: "صبا", sikah: "سيكاه", nikriz: "نكريز"
+  };
+  const MAQAM_AR = {
+    rast_asli: "رست أصلي", rast_nayrouz: "رست نيروز", rast_souznak: "رست سوزناك", rast_dalanshin: "رست دلنشين",
+    nahawand: "نهاوند", nikriz: "نكريز", nawa_athar: "نوى أثر", hijazkar: "حجازكار",
+    zanjaran: "زنجران (زنكولاه)", hijazkar_kurd: "حجازكار كرد",
+    bayati_asli: "بياتي أصلي", bayati_muhayyar: "بياتي محير", bayati_shuri: "بياتي شوري",
+    hijaz: "حجاز", shahnaz: "شهناز", kurd: "كرد", saba: "صبا",
+    huzam: "سيكاه هزام", rahat_arwah: "راحة الأرواح", iraq: "عراق", bastanikar: "بستنكار",
+    jaharkah: "جهاركاه", ajam_ushayran: "عجم عشيران", lami: "لامي"
+  };
   function maqamDegrees(key, tonic, altForm) {
     const m = MAQAM[key];
     const set = new Set();
@@ -444,16 +458,17 @@
       sel.appendChild(o);
     }
   }
-  function fillOptions(sel, noneLabel, obj) {
+  function fillOptions(sel, noneLabel, obj, arMap) {
     sel.innerHTML = '<option value="">' + noneLabel + '</option>';
     for (const key in obj) {
       const o = document.createElement("option");
-      o.value = key; o.textContent = obj[key].name;
+      o.value = key;
+      o.textContent = (LANG === "ar" && arMap && arMap[key]) ? arMap[key] : obj[key].name;
       sel.appendChild(o);
     }
   }
-  const fillJinsSel = (sel) => fillOptions(sel, t("none"), JINS);
-  const fillMaqamSel = (sel) => fillOptions(sel, t("none"), MAQAM);
+  const fillJinsSel = (sel) => fillOptions(sel, t("none"), JINS, JINS_AR);
+  const fillMaqamSel = (sel) => fillOptions(sel, t("none"), MAQAM, MAQAM_AR);
 
   // Menu « Variante » : montre/masque + remplit selon le maqam sélectionné
   function updateAltSel(maqamSel, altSel, wrap) {
