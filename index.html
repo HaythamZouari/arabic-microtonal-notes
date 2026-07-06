@@ -566,12 +566,9 @@
     oudComp.threshold.value = -1; oudComp.knee.value = 0; oudComp.ratio.value = 20;
     oudComp.attack.value = 0.003; oudComp.release.value = 0.12;
     oudGain.connect(oudComp).connect(gainNode);
-    // Bus des synthés avec réverbération légère (rendu plus vivant/naturel)
+    // Bus des synthés
     synthBus = ctx.createGain();
-    synthBus.connect(gainNode); // signal direct
-    const rev = ctx.createConvolver(); rev.buffer = makeReverbIR(1.7, 3.2);
-    const revGain = ctx.createGain(); revGain.gain.value = 0.2;
-    synthBus.connect(rev); rev.connect(revGain); revGain.connect(gainNode); // signal réverbéré
+    synthBus.connect(gainNode);
     // Bruit blanc en boucle (souffle du ney)
     noiseBuf = makeReverbIR(1, 0); // bruit plat (decay 0)
   }
@@ -599,7 +596,10 @@
     const now = ctx.currentTime, freq = freqFor(i);
     const oscs = [];
     const env = ctx.createGain();
-    env.connect(synthBus); // -> bus synthé (avec réverb)
+    // Compensation de la loudness perçue : les aigus sont naturellement plus « forts »
+    const loud = Math.min(1, Math.pow(150 / freq, 0.6));
+    const voiceGain = ctx.createGain(); voiceGain.gain.value = loud;
+    env.connect(voiceGain).connect(synthBus);
     let DUR;
 
     if (SOURCE === "piano") {
@@ -648,7 +648,7 @@
       // Ney (ناي) : flûte de roseau — sinus doux + souffle filtré + vibrato retardé
       const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq;
       const o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2;
-      const g2 = ctx.createGain(); g2.gain.value = 0.13;
+      const g2 = ctx.createGain(); g2.gain.value = 0.07;
       const lfo = ctx.createOscillator(); lfo.frequency.value = 4.8;
       const lfoG = ctx.createGain(); lfoG.gain.value = 0;
       lfoG.gain.setValueAtTime(0, now); lfoG.gain.linearRampToValueAtTime(freq * 0.007, now + 0.4); // vibrato retardé
@@ -669,9 +669,9 @@
     } else if (SOURCE === "qanun") {
       DUR = 1.6;
       // Qanun (قانون) : cithare pincée, brillante, cordes doublées
-      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = Math.min(11000, freq * 12); filt.Q.value = 0.5;
+      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = Math.min(7000, freq * 7); filt.Q.value = 0.5;
       filt.connect(env);
-      [[1, 1.0], [2, 0.5], [3, 0.26], [4, 0.13]].forEach(([mult, amp]) => {
+      [[1, 1.0], [2, 0.4], [3, 0.16]].forEach(([mult, amp]) => {
         [-6, 6].forEach(cents => {
           const o = ctx.createOscillator(); o.type = "triangle";
           o.frequency.value = freq * mult * Math.pow(2, cents / 1200);
