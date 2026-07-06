@@ -6,6 +6,7 @@ from build_pitch import read_mono, detect_f0, psola, G2, OUT_RATE, TOTAL
 
 SRC = "refs/violon.wav"
 DST = "notes/violon"
+TARGET_SEC = 2.0  # durée voulue de chaque note
 
 
 def trim_onset_full(x, sr):
@@ -26,11 +27,12 @@ def main():
     x, sr = read_mono(SRC)
     x = trim_onset_full(x, sr)
     f0 = detect_f0(x, sr)
-    print(f"violon : f0 = {f0:.1f} Hz | {len(x)/sr:.2f}s")
+    stretch = TARGET_SEC / (len(x) / sr)
+    print(f"violon : f0 = {f0:.1f} Hz | {len(x)/sr:.2f}s -> {TARGET_SEC}s (x{stretch:.2f})")
     total = 0
     for i in range(TOTAL):
         f1 = G2 * (2 ** (i / 24))
-        y = psola(x, sr, f0, f1, stretch=2.0)  # durée doublée
+        y = psola(x, sr, f0, f1, stretch=stretch)
         raw = struct.pack("<%dh" % len(y), *[max(-32768, min(32767, int(v * 32767))) for v in y])
         raw, _ = audioop.ratecv(raw, 2, 1, sr, OUT_RATE, None)
         out = DST + f"/note-{i}.wav"

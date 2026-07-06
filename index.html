@@ -773,6 +773,7 @@
   }
   const oudSet = sampleSet("notes/voix");     // « Oud transposé » (voix PSOLA)
   const vlnSet = sampleSet("notes/violon");   // « Violon » (violon réel PSOLA)
+  const kanunSet = sampleSet("notes/kanun");  // « Qanun » (kanun réel PSOLA)
 
   // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
   // dest : nœud de sortie (par défaut le gain maître ; la voie oud pour l'oud)
@@ -795,6 +796,7 @@
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
     if (SOURCE === "voix2") return bufferVoice(oudSet.bufs[i], null, oudGain); // gain réglable via le curseur
     if (SOURCE === "violin") return bufferVoice(vlnSet.bufs[i]); // violon réel transposé
+    if (SOURCE === "qanun") return bufferVoice(kanunSet.bufs[i]); // kanun réel transposé
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
@@ -821,7 +823,7 @@
       return;
     }
     // Sources à échantillons PSOLA (oud, violon) : charger le buffer de la note i
-    const set = SOURCE === "voix2" ? oudSet : (SOURCE === "violin" ? vlnSet : null);
+    const set = SOURCE === "voix2" ? oudSet : (SOURCE === "violin" ? vlnSet : (SOURCE === "qanun" ? kanunSet : null));
     if (set) {
       if (set.bufs[i]) { begin(); return; }
       if (reveal) status.textContent = t("loading");
