@@ -203,6 +203,9 @@
     <span data-i18n="lbl_instrument">🎛 Instrument</span>
     <select id="source">
       <option value="voix2" data-i18n="src_oud">Oud transposé</option>
+      <option value="ney" data-i18n="src_ney">Ney (flûte)</option>
+      <option value="qanun" data-i18n="src_qanun">Qanun</option>
+      <option value="strings" data-i18n="src_strings">Cordes</option>
       <option value="violin" selected data-i18n="src_violin">Violon (synthétique)</option>
       <option value="piano" data-i18n="src_piano">Piano (synthétique)</option>
     </select>
@@ -284,7 +287,7 @@
       subtitle: "Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins & dictée",
       tab_libre: "🎹 Écoute libre", tab_dictee: "🎧 Dictée",
       lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Gain oud",
-      src_oud: "Oud transposé", src_violin: "Violon (synthétique)", src_piano: "Piano (synthétique)",
+      src_oud: "Oud transposé", src_ney: "Ney (flûte)", src_qanun: "Qanun", src_strings: "Cordes", src_violin: "Violon (synthétique)", src_piano: "Piano (synthétique)",
       h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variante", lbl_tonale: "Tonale",
       btn_to_dictee: "🎧 Passer à la dictée sur cette gamme",
       h_dictee: "🎧 Dictée musicale", h_jinsmaqam_opt: "Jins / Maqam (optionnel)",
@@ -303,7 +306,7 @@
       subtitle: "Listening lab for Arabic maqāmāt — quarter tones, jins & dictation",
       tab_libre: "🎹 Free play", tab_dictee: "🎧 Dictation",
       lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Oud gain",
-      src_oud: "Transposed oud", src_violin: "Violin (synth)", src_piano: "Piano (synth)",
+      src_oud: "Transposed oud", src_ney: "Ney (flute)", src_qanun: "Qanun", src_strings: "Strings", src_violin: "Violin (synth)", src_piano: "Piano (synth)",
       h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variant", lbl_tonale: "Tonic",
       btn_to_dictee: "🎧 Go to dictation on this scale",
       h_dictee: "🎧 Musical dictation", h_jinsmaqam_opt: "Jins / Maqam (optional)",
@@ -322,7 +325,7 @@
       subtitle: "مختبر سماع المقامات العربية — الأجناس والإملاء المقامي",
       tab_libre: "🎹 استماع حر", tab_dictee: "🎧 إملاء",
       lbl_instrument: "🎛 الآلة", gain_oud: "🔊 مستوى العود",
-      src_oud: "عود", src_violin: "كمان", src_piano: "بيانو",
+      src_oud: "عود", src_ney: "ناي", src_qanun: "قانون", src_strings: "أوتار", src_violin: "كمان", src_piano: "بيانو",
       h_jinsmaqam: "🎼 الجنس / المقام", lbl_jins: "جنس", lbl_maqam: "مقام", lbl_variante: "إمكانيات", lbl_tonale: "إرتكاز",
       btn_to_dictee: "🎧 الانتقال إلى الإملاء على هذا المقام",
       h_dictee: "🎧 الإملاء الموسيقي", h_jinsmaqam_opt: "الجنس / المقام (اختياري)",
@@ -535,9 +538,20 @@
   const TRIM_END = 0;
 
   // ---- Moteur audio : Web Audio API avec préchargement en mémoire ----
-  let ctx = null, gainNode = null, oudComp = null, oudGain = null;
+  let ctx = null, gainNode = null, oudComp = null, oudGain = null, synthBus = null, noiseBuf = null;
   const buffers = new Array(TOTAL);   // AudioBuffer décodés
   const loading = new Array(TOTAL);   // promesses de chargement
+
+  // Impulsion de réverbération (bruit décroissant) pour un rendu plus naturel
+  function makeReverbIR(seconds, decay) {
+    const rate = ctx.sampleRate, len = Math.floor(rate * seconds);
+    const buf = ctx.createBuffer(2, len, rate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+    return buf;
+  }
 
   function initCtx() {
     if (ctx) return;
@@ -552,6 +566,14 @@
     oudComp.threshold.value = -1; oudComp.knee.value = 0; oudComp.ratio.value = 20;
     oudComp.attack.value = 0.003; oudComp.release.value = 0.12;
     oudGain.connect(oudComp).connect(gainNode);
+    // Bus des synthés avec réverbération légère (rendu plus vivant/naturel)
+    synthBus = ctx.createGain();
+    synthBus.connect(gainNode); // signal direct
+    const rev = ctx.createConvolver(); rev.buffer = makeReverbIR(1.7, 3.2);
+    const revGain = ctx.createGain(); revGain.gain.value = 0.2;
+    synthBus.connect(rev); rev.connect(revGain); revGain.connect(gainNode); // signal réverbéré
+    // Bruit blanc en boucle (souffle du ney)
+    noiseBuf = makeReverbIR(1, 0); // bruit plat (decay 0)
   }
 
   function loadBuffer(i) {
@@ -577,7 +599,7 @@
     const now = ctx.currentTime, freq = freqFor(i);
     const oscs = [];
     const env = ctx.createGain();
-    env.connect(gainNode);
+    env.connect(synthBus); // -> bus synthé (avec réverb)
     let DUR;
 
     if (SOURCE === "piano") {
@@ -620,6 +642,67 @@
       o.start(now); o.stop(now + DUR);
       lfo.start(now); lfo.stop(now + DUR);
       oscs.push(o, lfo);
+
+    } else if (SOURCE === "ney") {
+      DUR = 1.9;
+      // Ney (ناي) : flûte de roseau — sinus doux + souffle filtré + vibrato retardé
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq;
+      const o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2;
+      const g2 = ctx.createGain(); g2.gain.value = 0.13;
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 4.8;
+      const lfoG = ctx.createGain(); lfoG.gain.value = 0;
+      lfoG.gain.setValueAtTime(0, now); lfoG.gain.linearRampToValueAtTime(freq * 0.007, now + 0.4); // vibrato retardé
+      lfo.connect(lfoG); lfoG.connect(o.frequency); lfoG.connect(o2.frequency);
+      const noise = ctx.createBufferSource(); noise.buffer = noiseBuf; noise.loop = true;
+      const nf = ctx.createBiquadFilter(); nf.type = "bandpass"; nf.frequency.value = Math.min(3500, freq * 3); nf.Q.value = 0.6;
+      const ng = ctx.createGain(); ng.gain.value = 0.05;
+      noise.connect(nf).connect(ng).connect(env);
+      o.connect(env); o2.connect(g2).connect(env);
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.linearRampToValueAtTime(0.5, now + 0.09);           // attaque soufflée
+      env.gain.setValueAtTime(0.5, now + DUR - 0.25);
+      env.gain.linearRampToValueAtTime(0.0001, now + DUR);
+      o.start(now); o.stop(now + DUR); o2.start(now); o2.stop(now + DUR);
+      lfo.start(now); lfo.stop(now + DUR); noise.start(now); noise.stop(now + DUR);
+      oscs.push(o, o2, lfo, noise);
+
+    } else if (SOURCE === "qanun") {
+      DUR = 1.6;
+      // Qanun (قانون) : cithare pincée, brillante, cordes doublées
+      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = Math.min(11000, freq * 12); filt.Q.value = 0.5;
+      filt.connect(env);
+      [[1, 1.0], [2, 0.5], [3, 0.26], [4, 0.13]].forEach(([mult, amp]) => {
+        [-6, 6].forEach(cents => {
+          const o = ctx.createOscillator(); o.type = "triangle";
+          o.frequency.value = freq * mult * Math.pow(2, cents / 1200);
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime(amp * 0.45, now + 0.003);   // pincement vif
+          g.gain.exponentialRampToValueAtTime(0.0001, now + DUR);
+          o.connect(g).connect(filt); o.start(now); o.stop(now + DUR); oscs.push(o);
+        });
+      });
+      env.gain.value = 0.7;
+
+    } else if (SOURCE === "strings") {
+      DUR = 2.1;
+      // Cordes (أوتار) : ensemble — plusieurs voix désaccordées, attaque lente, vibrato
+      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = Math.min(6000, freq * 5);
+      filt.connect(env);
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 5.2;
+      const lfoG = ctx.createGain(); lfoG.gain.value = freq * 0.004; lfo.connect(lfoG);
+      [-9, -3, 3, 9].forEach(cents => {
+        const o = ctx.createOscillator(); o.type = "sawtooth";
+        o.frequency.value = freq * Math.pow(2, cents / 1200);
+        lfoG.connect(o.frequency);
+        const g = ctx.createGain(); g.gain.value = 0.22;
+        o.connect(g).connect(filt); o.start(now); o.stop(now + DUR); oscs.push(o);
+      });
+      lfo.start(now); lfo.stop(now + DUR); oscs.push(lfo);
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.linearRampToValueAtTime(0.62, now + 0.28);           // attaque lente (ensemble)
+      env.gain.setValueAtTime(0.62, now + DUR - 0.35);
+      env.gain.linearRampToValueAtTime(0.0001, now + DUR);
 
     } else if (SOURCE === "oud") {
       DUR = 1.7;
