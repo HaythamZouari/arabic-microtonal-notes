@@ -19,12 +19,10 @@ TOTAL = 49
 G2 = 98.0
 OUT_RATE = 22050
 
-# Multi-échantillonnage à UPSHIFT seul (PSOLA propre uniquement vers le haut) :
-# chaque référence claire ne transpose que les notes >= sa propre hauteur.
+# Une seule référence (Sol grave ~98 Hz) pour toutes les notes, en UPSHIFT.
 #   (fichier source, plage de notes rendues)
 REFS = [
-    ("solsolsol/sans titre.wav",    range(0, 24)),   # ~98 Hz  -> notes 1..24
-    ("solsolsol/sans titre-24.wav", range(24, 49)),  # ~189 Hz -> notes 25..49
+    ("solsolsol/sans titre.wav", range(0, 49)),  # ~98 Hz -> toutes les notes (transposition vers l'aigu)
 ]
 
 
