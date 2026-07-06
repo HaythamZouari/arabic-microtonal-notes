@@ -206,7 +206,7 @@
       <option value="ney" data-i18n="src_ney">Ney (flûte)</option>
       <option value="qanun" data-i18n="src_qanun">Qanun</option>
       <option value="strings" data-i18n="src_strings">Cordes</option>
-      <option value="violin" selected data-i18n="src_violin">Violon (synthétique)</option>
+      <option value="violin" selected data-i18n="src_violin">Violon</option>
       <option value="piano" data-i18n="src_piano">Piano (synthétique)</option>
     </select>
   </div>
@@ -287,7 +287,7 @@
       subtitle: "Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins & dictée",
       tab_libre: "🎹 Écoute libre", tab_dictee: "🎧 Dictée",
       lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Gain oud",
-      src_oud: "Oud transposé", src_ney: "Ney (flûte)", src_qanun: "Qanun", src_strings: "Cordes", src_violin: "Violon (synthétique)", src_piano: "Piano (synthétique)",
+      src_oud: "Oud transposé", src_ney: "Ney (flûte)", src_qanun: "Qanun", src_strings: "Cordes", src_violin: "Violon", src_piano: "Piano (synthétique)",
       h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variante", lbl_tonale: "Tonale",
       btn_to_dictee: "🎧 Passer à la dictée sur cette gamme",
       h_dictee: "🎧 Dictée musicale", h_jinsmaqam_opt: "Jins / Maqam (optionnel)",
@@ -306,7 +306,7 @@
       subtitle: "Listening lab for Arabic maqāmāt — quarter tones, jins & dictation",
       tab_libre: "🎹 Free play", tab_dictee: "🎧 Dictation",
       lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Oud gain",
-      src_oud: "Transposed oud", src_ney: "Ney (flute)", src_qanun: "Qanun", src_strings: "Strings", src_violin: "Violin (synth)", src_piano: "Piano (synth)",
+      src_oud: "Transposed oud", src_ney: "Ney (flute)", src_qanun: "Qanun", src_strings: "Strings", src_violin: "Violin", src_piano: "Piano (synth)",
       h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variant", lbl_tonale: "Tonic",
       btn_to_dictee: "🎧 Go to dictation on this scale",
       h_dictee: "🎧 Musical dictation", h_jinsmaqam_opt: "Jins / Maqam (optional)",
@@ -756,18 +756,23 @@
   }
 
   // Voix pitch-shift à formants préservés (PSOLA pré-rendu, voir build_pitch.py)
-  const vbuffers = new Array(TOTAL);
-  const vloading = new Array(TOTAL);
-  function loadVBuffer(i) {
-    if (vbuffers[i]) return Promise.resolve(vbuffers[i]);
-    if (vloading[i]) return vloading[i];
-    vloading[i] = fetch("notes/voix/note-" + i + ".wav")
-      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
-      .then(ab => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
-      .then(buf => { vbuffers[i] = buf; return buf; })
-      .catch(err => { vloading[i] = null; throw err; });
-    return vloading[i];
+  // Ensemble d'échantillons PSOLA pré-rendus (un dossier = un instrument)
+  function sampleSet(folder) {
+    const bufs = new Array(TOTAL), ld = new Array(TOTAL);
+    function load(i) {
+      if (bufs[i]) return Promise.resolve(bufs[i]);
+      if (ld[i]) return ld[i];
+      ld[i] = fetch(folder + "/note-" + i + ".wav")
+        .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
+        .then(ab => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
+        .then(buf => { bufs[i] = buf; return buf; })
+        .catch(err => { ld[i] = null; throw err; });
+      return ld[i];
+    }
+    return { bufs, load };
   }
+  const oudSet = sampleSet("notes/voix");     // « Oud transposé » (voix PSOLA)
+  const vlnSet = sampleSet("notes/violon");   // « Violon » (violon réel PSOLA)
 
   // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
   // dest : nœud de sortie (par défaut le gain maître ; la voie oud pour l'oud)
@@ -788,7 +793,8 @@
   function spawn(i) {
     // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
-    if (SOURCE === "voix2") return bufferVoice(vbuffers[i], null, oudGain); // gain réglable via le curseur
+    if (SOURCE === "voix2") return bufferVoice(oudSet.bufs[i], null, oudGain); // gain réglable via le curseur
+    if (SOURCE === "violin") return bufferVoice(vlnSet.bufs[i]); // violon réel transposé
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
@@ -814,11 +820,12 @@
       loadRef().then(begin).catch(() => { if (reveal) status.textContent = t("unavailable"); });
       return;
     }
-    // Voix formants préservés : a besoin du buffer PSOLA de la note i
-    if (SOURCE === "voix2") {
-      if (vbuffers[i]) { begin(); return; }
+    // Sources à échantillons PSOLA (oud, violon) : charger le buffer de la note i
+    const set = SOURCE === "voix2" ? oudSet : (SOURCE === "violin" ? vlnSet : null);
+    if (set) {
+      if (set.bufs[i]) { begin(); return; }
       if (reveal) status.textContent = t("loading");
-      loadVBuffer(i).then(begin).catch(() => { if (reveal) status.textContent = t("unavailable"); });
+      set.load(i).then(begin).catch(() => { if (reveal) status.textContent = t("unavailable"); });
       return;
     }
     // Enregistrement : a besoin du buffer de la note i ; synthé : aucun
@@ -1117,7 +1124,7 @@
     function next() {
       if (k >= TOTAL) return;
       const i = k++;
-      loadVBuffer(i).catch(() => {}).then(() => { // précharge l'« Oud transposé »
+      Promise.all([vlnSet.load(i).catch(() => {}), oudSet.load(i).catch(() => {})]).then(() => {
         done++;
         status.textContent = done >= TOTAL ? "" : t("prefetch") + " " + done + "/" + TOTAL;
         next();
