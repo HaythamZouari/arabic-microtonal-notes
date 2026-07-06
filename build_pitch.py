@@ -67,10 +67,12 @@ def detect_f0(x, sr):
     return sr / best_lag
 
 
-def psola(x, sr, f0, f1):
+def psola(x, sr, f0, f1, stretch=1.0):
+    # stretch : facteur d'étirement temporel (durée) sans changer la hauteur
     T0 = sr / f0
     T1 = sr / f1
-    N = len(x)
+    Nin = len(x)
+    N = int(Nin * stretch)                     # longueur de sortie
     L = int(round(2 * T0))
     half = L // 2
     hann = [0.5 - 0.5 * math.cos(2 * math.pi * n / (L - 1)) for n in range(L)]
@@ -79,14 +81,15 @@ def psola(x, sr, f0, f1):
     pos = float(half)
     while pos < N:
         center = int(round(pos))
-        k = round(center / T0)                 # marque d'analyse la plus proche
+        src = center / stretch                 # position correspondante dans la source
+        k = round(src / T0)                    # marque d'analyse la plus proche
         a = int(round(k * T0))
         base_o = center - half
         base_x = a - half
         for n in range(L):
             oi = base_o + n
             xi = base_x + n
-            if 0 <= oi < N and 0 <= xi < N:
+            if 0 <= oi < N and 0 <= xi < Nin:
                 out[oi] += x[xi] * hann[n]
                 norm[oi] += hann[n]
         pos += T1

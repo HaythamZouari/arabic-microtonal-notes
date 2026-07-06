@@ -30,7 +30,7 @@ def main():
     total = 0
     for i in range(TOTAL):
         f1 = G2 * (2 ** (i / 24))
-        y = psola(x, sr, f0, f1)
+        y = psola(x, sr, f0, f1, stretch=2.0)  # durée doublée
         raw = struct.pack("<%dh" % len(y), *[max(-32768, min(32767, int(v * 32767))) for v in y])
         raw, _ = audioop.ratecv(raw, 2, 1, sr, OUT_RATE, None)
         out = DST + f"/note-{i}.wav"
