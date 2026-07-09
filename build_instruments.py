@@ -5,21 +5,21 @@ import os, wave, audioop, struct
 from build_pitch import read_mono, detect_f0, psola, G2, OUT_RATE, TOTAL
 from build_violin import trim_onset_full
 
-TARGET_SEC = 2.0
+# target = None -> durée naturelle (pincé/frappé) ; sinon durée cible en secondes (tenu)
 JOBS = [
-    ("refs/oud.wav",   "notes/oud"),    # ~148 Hz (Ré3)
-    ("refs/nai.wav",   "notes/ney"),    # ~292 Hz (Ré4)
-    ("refs/piano.wav", "notes/piano"),  # ~331 Hz (Mi4)
+    ("refs/oud.wav",   "notes/oud",   None),  # oud pincé -> naturel
+    ("refs/nai.wav",   "notes/ney",   2.0),   # ney tenu -> 2 s
+    ("refs/piano.wav", "notes/piano", None),  # piano frappé -> naturel
 ]
 
 
-def render(src, dst):
+def render(src, dst, target):
     os.makedirs(dst, exist_ok=True)
     x, sr = read_mono(src)
     x = trim_onset_full(x, sr)
     f0 = detect_f0(x, sr)
-    stretch = TARGET_SEC / (len(x) / sr)
-    print(f"{dst}: f0 = {f0:.1f} Hz | {len(x)/sr:.2f}s -> {TARGET_SEC}s (x{stretch:.2f})")
+    stretch = 1.0 if target is None else target / (len(x) / sr)
+    print(f"{dst}: f0 = {f0:.1f} Hz | {len(x)/sr:.2f}s -> x{stretch:.2f}")
     total = 0
     for i in range(TOTAL):
         f1 = G2 * (2 ** (i / 24))
@@ -34,5 +34,5 @@ def render(src, dst):
 
 
 if __name__ == "__main__":
-    for s, d in JOBS:
-        render(s, d)
+    for s, d, tgt in JOBS:
+        render(s, d, tgt)

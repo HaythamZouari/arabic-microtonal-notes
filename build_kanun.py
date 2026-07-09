@@ -15,8 +15,8 @@ def main():
     x, sr = read_mono(SRC)
     x = trim_onset_full(x, sr)
     f0 = detect_f0(x, sr)
-    stretch = TARGET_SEC / (len(x) / sr)
-    print(f"kanun : f0 = {f0:.1f} Hz | {len(x)/sr:.2f}s -> {TARGET_SEC}s (x{stretch:.2f})")
+    stretch = 1.0  # kanun pincé -> durée naturelle (pas d'étirement)
+    print(f"kanun : f0 = {f0:.1f} Hz | {len(x)/sr:.2f}s -> x{stretch:.2f}")
     total = 0
     for i in range(TOTAL):
         f1 = G2 * (2 ** (i / 24))
