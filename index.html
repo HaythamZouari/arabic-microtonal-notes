@@ -202,17 +202,17 @@
   <div class="field">
     <span data-i18n="lbl_instrument">🎛 Instrument</span>
     <select id="source">
-      <option value="voix2" data-i18n="src_oud">Oud transposé</option>
-      <option value="ney" data-i18n="src_ney">Ney (flûte)</option>
+      <option value="voix2" data-i18n="src_oud">Oud</option>
+      <option value="ney" data-i18n="src_ney">Ney</option>
       <option value="qanun" data-i18n="src_qanun">Qanun</option>
       <option value="strings" data-i18n="src_strings">Cordes</option>
       <option value="violin" selected data-i18n="src_violin">Violon</option>
-      <option value="piano" data-i18n="src_piano">Piano (synthétique)</option>
+      <option value="piano" data-i18n="src_piano">Piano</option>
     </select>
   </div>
   <div class="field hidden" id="oud-gain-wrap">
-    <span><span data-i18n="gain_oud">🔊 Gain oud</span> · <b id="oud-gain-val">400 %</b></span>
-    <input id="oud-gain" type="range" min="100" max="800" step="10" value="400">
+    <span><span data-i18n="gain_oud">🔊 Gain oud</span> · <b id="oud-gain-val">150 %</b></span>
+    <input id="oud-gain" type="range" min="100" max="800" step="10" value="150">
   </div>
 </div>
 <p id="status"></p>
@@ -287,7 +287,7 @@
       subtitle: "Laboratoire d'écoute des maqāmāt arabes — quarts de ton, jins & dictée",
       tab_libre: "🎹 Écoute libre", tab_dictee: "🎧 Dictée",
       lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Gain oud",
-      src_oud: "Oud transposé", src_ney: "Ney (flûte)", src_qanun: "Qanun", src_strings: "Cordes", src_violin: "Violon", src_piano: "Piano (synthétique)",
+      src_oud: "Oud", src_ney: "Ney", src_qanun: "Qanun", src_strings: "Cordes", src_violin: "Violon", src_piano: "Piano",
       h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variante", lbl_tonale: "Tonale",
       btn_to_dictee: "🎧 Passer à la dictée sur cette gamme",
       h_dictee: "🎧 Dictée musicale", h_jinsmaqam_opt: "Jins / Maqam (optionnel)",
@@ -306,7 +306,7 @@
       subtitle: "Listening lab for Arabic maqāmāt — quarter tones, jins & dictation",
       tab_libre: "🎹 Free play", tab_dictee: "🎧 Dictation",
       lbl_instrument: "🎛 Instrument", gain_oud: "🔊 Oud gain",
-      src_oud: "Transposed oud", src_ney: "Ney (flute)", src_qanun: "Qanun", src_strings: "Strings", src_violin: "Violin", src_piano: "Piano (synth)",
+      src_oud: "Oud", src_ney: "Ney", src_qanun: "Qanun", src_strings: "Strings", src_violin: "Violin", src_piano: "Piano",
       h_jinsmaqam: "🎼 Jins & Maqam", lbl_jins: "Jins", lbl_maqam: "Maqam", lbl_variante: "Variant", lbl_tonale: "Tonic",
       btn_to_dictee: "🎧 Go to dictation on this scale",
       h_dictee: "🎧 Musical dictation", h_jinsmaqam_opt: "Jins / Maqam (optional)",
@@ -771,9 +771,11 @@
     }
     return { bufs, load };
   }
-  const oudSet = sampleSet("notes/voix");     // « Oud transposé » (voix PSOLA)
+  const oudSet = sampleSet("notes/oud");      // « Oud » (oud réel PSOLA)
   const vlnSet = sampleSet("notes/violon");   // « Violon » (violon réel PSOLA)
   const kanunSet = sampleSet("notes/kanun");  // « Qanun » (kanun réel PSOLA)
+  const neySet = sampleSet("notes/ney");      // « Ney » (ney réel PSOLA)
+  const pianoSet = sampleSet("notes/piano");  // « Piano » (piano réel PSOLA)
 
   // Voix à partir d'un buffer, avec fondu d'entrée anti-clic. Renvoie { env, nodes }
   // dest : nœud de sortie (par défaut le gain maître ; la voie oud pour l'oud)
@@ -797,6 +799,8 @@
     if (SOURCE === "voix2") return bufferVoice(oudSet.bufs[i], null, oudGain); // gain réglable via le curseur
     if (SOURCE === "violin") return bufferVoice(vlnSet.bufs[i]); // violon réel transposé
     if (SOURCE === "qanun") return bufferVoice(kanunSet.bufs[i]); // kanun réel transposé
+    if (SOURCE === "ney") return bufferVoice(neySet.bufs[i]);     // ney réel transposé
+    if (SOURCE === "piano") return bufferVoice(pianoSet.bufs[i]); // piano réel transposé
     if (SOURCE !== "rec") return spawnSynth(i);
     return bufferVoice(buffers[i]);
   }
@@ -823,7 +827,7 @@
       return;
     }
     // Sources à échantillons PSOLA (oud, violon) : charger le buffer de la note i
-    const set = SOURCE === "voix2" ? oudSet : (SOURCE === "violin" ? vlnSet : (SOURCE === "qanun" ? kanunSet : null));
+    const set = SOURCE === "voix2" ? oudSet : (SOURCE === "violin" ? vlnSet : (SOURCE === "qanun" ? kanunSet : (SOURCE === "ney" ? neySet : (SOURCE === "piano" ? pianoSet : null))));
     if (set) {
       if (set.bufs[i]) { begin(); return; }
       if (reveal) status.textContent = t("loading");
