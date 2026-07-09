@@ -95,8 +95,6 @@
     background-repeat: no-repeat; background-position: right 12px center;
     transition: border-color .15s, box-shadow .15s;
   }
-  #oud-gain { width: 170px; accent-color: var(--gold); cursor: pointer; vertical-align: middle; }
-  #oud-gain-val { color: var(--gold); }
   select:hover { border-color: rgba(255,206,92,.5); }
   select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255,206,92,.2); }
   optgroup { color: var(--gold); background: #1d1436; }
@@ -209,10 +207,6 @@
       <option value="violin" selected data-i18n="src_violin">Violon</option>
       <option value="piano" data-i18n="src_piano">Piano</option>
     </select>
-  </div>
-  <div class="field hidden" id="oud-gain-wrap">
-    <span><span data-i18n="gain_oud">🔊 Gain oud</span> · <b id="oud-gain-val">150 %</b></span>
-    <input id="oud-gain" type="range" min="100" max="800" step="10" value="150">
   </div>
 </div>
 <p id="status"></p>
@@ -538,7 +532,7 @@
   const TRIM_END = 0;
 
   // ---- Moteur audio : Web Audio API avec préchargement en mémoire ----
-  let ctx = null, gainNode = null, oudComp = null, oudGain = null, synthBus = null, noiseBuf = null;
+  let ctx = null, gainNode = null, synthBus = null, noiseBuf = null;
   const buffers = new Array(TOTAL);   // AudioBuffer décodés
   const loading = new Array(TOTAL);   // promesses de chargement
 
@@ -559,13 +553,6 @@
     gainNode = ctx.createGain();
     gainNode.gain.value = 1; // volume maître à 100 %
     gainNode.connect(ctx.destination); // son naturel : source -> gain -> sortie
-    // Voie dédiée à l'oud : gain réglable (curseur) -> limiteur -> sortie
-    oudGain = ctx.createGain();
-    oudGain.gain.value = parseFloat(oudGainSlider.value) / 100;
-    oudComp = ctx.createDynamicsCompressor();
-    oudComp.threshold.value = -1; oudComp.knee.value = 0; oudComp.ratio.value = 20;
-    oudComp.attack.value = 0.003; oudComp.release.value = 0.12;
-    oudGain.connect(oudComp).connect(gainNode);
     // Bus des synthés
     synthBus = ctx.createGain();
     synthBus.connect(gainNode);
@@ -796,7 +783,7 @@
   function spawn(i) {
     // Échantillon transposé : 1 quart de ton = ratio 2^(1/24), accord authentique conservé
     if (SOURCE === "sample") return bufferVoice(refBuffer, Math.pow(2, (i - REF) / 24));
-    if (SOURCE === "voix2") return bufferVoice(oudSet.bufs[i], null, oudGain); // gain réglable via le curseur
+    if (SOURCE === "voix2") return bufferVoice(oudSet.bufs[i]); // oud réel, gain naturel
     if (SOURCE === "violin") return bufferVoice(vlnSet.bufs[i]); // violon réel transposé
     if (SOURCE === "qanun") return bufferVoice(kanunSet.bufs[i]); // kanun réel transposé
     if (SOURCE === "ney") return bufferVoice(neySet.bufs[i]);     // ney réel transposé
@@ -889,18 +876,8 @@
     return sec;
   }
 
-  // Curseur de gain propre à l'oud transposé (affiché seulement pour l'oud)
-  const oudGainSlider = document.getElementById("oud-gain");
-  const oudGainVal = document.getElementById("oud-gain-val");
-  const oudGainWrap = document.getElementById("oud-gain-wrap");
-  oudGainSlider.addEventListener("input", () => {
-    oudGainVal.textContent = oudGainSlider.value + " %";
-    if (oudGain) oudGain.gain.value = parseFloat(oudGainSlider.value) / 100;
-  });
-
   document.getElementById("source").addEventListener("change", e => {
     SOURCE = e.target.value;
-    oudGainWrap.classList.toggle("hidden", SOURCE !== "voix2"); // barre de gain seulement pour l'oud
     stop();
   });
 
