@@ -2,7 +2,7 @@
 """Pré-rend les 49 notes de plusieurs instruments par PSOLA depuis une note de référence.
 Durée cible 2 s. Sortie : notes/<nom>/note-<i>.wav (mono 22050 Hz)."""
 import os, wave, audioop, struct
-from build_pitch import read_mono, detect_f0, psola, G2, OUT_RATE, TOTAL
+from build_pitch import read_mono, detect_f0, pitch_note, G2, OUT_RATE, TOTAL
 from build_violin import trim_onset_full
 
 # target = None -> durée naturelle (pincé/frappé) ; sinon durée cible en secondes (tenu)
@@ -23,7 +23,7 @@ def render(src, dst, target):
     total = 0
     for i in range(TOTAL):
         f1 = G2 * (2 ** (i / 24))
-        y = psola(x, sr, f0, f1, stretch=stretch)
+        y = pitch_note(x, sr, f0, f1, stretch=stretch)
         raw = struct.pack("<%dh" % len(y), *[max(-32768, min(32767, int(v * 32767))) for v in y])
         raw, _ = audioop.ratecv(raw, 2, 1, sr, OUT_RATE, None)
         with wave.open(dst + f"/note-{i}.wav", "wb") as w:

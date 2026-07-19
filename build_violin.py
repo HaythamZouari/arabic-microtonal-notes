@@ -2,7 +2,7 @@
 """Pré-rend les 49 notes du violon par PSOLA depuis un seul enregistrement de référence
 (refs/violon.wav, ~294 Hz). Sortie : notes/violon/note-<i>.wav (mono 22050 Hz)."""
 import os, wave, audioop, struct
-from build_pitch import read_mono, detect_f0, psola, G2, OUT_RATE, TOTAL
+from build_pitch import read_mono, detect_f0, pitch_note, G2, OUT_RATE, TOTAL
 
 SRC = "refs/violon.wav"
 DST = "notes/violon"
@@ -32,7 +32,7 @@ def main():
     total = 0
     for i in range(TOTAL):
         f1 = G2 * (2 ** (i / 24))
-        y = psola(x, sr, f0, f1, stretch=stretch)
+        y = pitch_note(x, sr, f0, f1, stretch=stretch)
         raw = struct.pack("<%dh" % len(y), *[max(-32768, min(32767, int(v * 32767))) for v in y])
         raw, _ = audioop.ratecv(raw, 2, 1, sr, OUT_RATE, None)
         out = DST + f"/note-{i}.wav"
