@@ -99,6 +99,32 @@ def psola(x, sr, f0, f1, stretch=1.0):
     return out
 
 
+def resample_pitch(x, f0, f1):
+    """Décale la hauteur de f0 à f1 par rééchantillonnage (hauteur exacte garantie,
+    formants décalés). Utilisé pour les grandes descentes où le PSOLA échoue."""
+    step = f1 / f0
+    n = len(x)
+    out = []
+    pos = 0.0
+    while pos < n - 1:
+        i = int(pos); frac = pos - i
+        out.append(x[i] + (x[i + 1] - x[i]) * frac)
+        pos += step
+    return out
+
+
+# Seuil : en dessous de ce ratio (descente au-delà d'~une quarte), le PSOLA
+# produit une erreur d'octave -> on bascule sur le rééchantillonnage.
+PSOLA_MIN_RATIO = 0.72
+
+
+def pitch_note(x, sr, f0, f1, stretch=1.0):
+    """Choisit PSOLA (formants préservés) ou rééchantillonnage selon l'ampleur de la transposition."""
+    if f1 / f0 >= PSOLA_MIN_RATIO:
+        return psola(x, sr, f0, f1, stretch)
+    return resample_pitch(x, f0, f1)
+
+
 def write_wav(path, x, sr):
     import struct
     # normalise légèrement pour éviter tout dépassement
